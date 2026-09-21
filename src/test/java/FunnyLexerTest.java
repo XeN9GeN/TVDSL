@@ -157,6 +157,9 @@ public class FunnyLexerTest {
         List<DFAState> raw_dfa = DFABuild.NFAConvertDFA(global_nfa.start_state, regular_alphabet);
         List<DFAState> minimized_dfa = MinimizeDFA.minimizeDFA(raw_dfa, regular_alphabet);
 
+        System.out.println("DFA before minimization: " + raw_dfa.size());
+        System.out.println("DFA after minimization: " + minimized_dfa.size());
+
         fullFunnyAutomaton = new DFAAutomaton(minimized_dfa, regular_alphabet);
 
         fullFunnyAutomaton.saveToJsonFile("target/dfa_table.json");
