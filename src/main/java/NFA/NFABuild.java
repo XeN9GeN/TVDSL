@@ -15,12 +15,12 @@ public class NFABuild {
         return new NFMiniA(start,accept);
     }
 
-    public NFMiniA concatenate(NFMiniA a, NFMiniA b){
+    public NFMiniA concatenate(NFMiniA a, NFMiniA b){//a then b
         a.finish_state.addETransition(b.start_state);
         return new NFMiniA(a.start_state, b.finish_state);
     }
 
-    public NFMiniA or(NFMiniA a, NFMiniA b){
+    public NFMiniA or(NFMiniA a, NFMiniA b){//or a or b
         NFAState new_start = createNewState();
         NFAState new_finish = createNewState();
 

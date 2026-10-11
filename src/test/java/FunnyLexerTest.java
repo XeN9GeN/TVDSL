@@ -3,6 +3,9 @@ import java.util.*;
 import DFA.*;
 import NFA.NFABuild;
 import NFA.NFMiniA;
+import lexer.FunnyLexer;
+import lexer.Tokens.Token;
+import lexer.Tokens.TokenType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -136,6 +139,9 @@ public class FunnyLexerTest {
         twoCharOps.put("<=", "OP_LE");
         twoCharOps.put(">=", "OP_GE");
 
+        twoCharOps.put("->", "OP_IMPLIES");
+        twoCharOps.put("=>", "OP_FORMULA_ARROW");
+
         for (Map.Entry<String, String> e : twoCharOps.entrySet()) {
             NFMiniA t = fromString(builder, e.getKey());
             t.finish_state.is_final_state = true;
@@ -265,5 +271,26 @@ public class FunnyLexerTest {
         assertEquals("IDENT", DFAInterpreter.validateString("and1", fullFunnyAutomaton).token_type);
         assertEquals("IDENT", DFAInterpreter.validateString("or1", fullFunnyAutomaton).token_type);
         assertEquals("IDENT", DFAInterpreter.validateString("int1", fullFunnyAutomaton).token_type);
+    }
+
+    @Test
+    public void testTokenizeProgram() {
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+
+        String source =
+                "function f(a: int) returns r: int {\n" +
+                        "    r = a + 1;\n" +
+                        "}";
+
+        List<Token> tokens = lexer.tokenize(source);
+
+        assertEquals(TokenType.KW_FUNCTION, tokens.get(0).type);
+        assertEquals(TokenType.IDENT, tokens.get(1).type);
+        assertEquals(TokenType.LPAREN, tokens.get(2).type);
+
+        assertEquals(TokenType.EOF, tokens.get(tokens.size() - 1).type);
+        for (Token token : tokens) {
+            System.out.println(token);
+        }
     }
 }
