@@ -1,19 +1,12 @@
 package lexer.Tokens;
-import lexer.Tokens.TokenType;
-
 
 public class LexerException extends RuntimeException {
     public final int line;
     public final int column;
 
-    public LexerException(
-            String message,
-            int line,
-            int column
-    ) {
-        super(message + " в строке " + line
-                + ", столбце " + column);
+    public LexerException(String message, int line, int column) {
 
+        super(message + " в строке " + line + ", столбце " + column);
         this.line = line;
         this.column = column;
     }
