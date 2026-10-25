@@ -1,8 +1,10 @@
 import java.util.*;
 
+import AST.ParserFunny;
 import DFA.*;
 import NFA.NFABuild;
 import NFA.NFMiniA;
+import AST.Nodes.*;
 import lexer.FunnyLexer;
 import lexer.Tokens.Token;
 import lexer.Tokens.TokenType;
@@ -273,14 +275,15 @@ public class FunnyLexerTest {
         assertEquals("IDENT", DFAInterpreter.validateString("int1", fullFunnyAutomaton).token_type);
     }
 
+
+
+
+    /// Тесты под парсер лексер и дерево, HW2
     @Test
     public void testTokenizeProgram() {
         FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
 
-        String source =
-                "function f(a: int) returns r: int {\n" +
-                        "    r = a + 1;\n" +
-                        "}";
+        String source = "function f(a: int) returns r: int {\n" + "    r = a + 1;\n" + "}";
 
         List<Token> tokens = lexer.tokenize(source);
 
@@ -293,4 +296,35 @@ public class FunnyLexerTest {
             System.out.println(token);
         }
     }
+
+    @Test
+    public void testParseProgram() {
+        String source = "function add(x: int) returns r: int { r = x + 2 * 3; }";
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        List<Token> tokens = lexer.tokenize(source);
+
+        ParserFunny parser = new ParserFunny(tokens);
+        ProgramNode ast = parser.parseProgram();
+
+        assertNotNull(ast);
+        assertNotNull(ast.functions);
+        assertEquals(1, ast.functions.size());
+
+        FunctionNode func = ast.functions.get(0);
+        assertEquals("add", func.name);
+
+        assertEquals(1, func.params.size());
+        assertEquals("x", func.params.get(0).name);
+        assertEquals("int", func.params.get(0).type);
+
+        assertEquals(1, func.returns.size());
+        assertEquals("r", func.returns.get(0).name);
+        assertEquals("int", func.returns.get(0).type);
+
+        assertNotNull(func.body);
+        assertEquals(1, func.body.statements.size());
+
+        System.out.println("Программа успешно распарсена. Найдено функций: " + ast.functions.size());
+    }
+
 }

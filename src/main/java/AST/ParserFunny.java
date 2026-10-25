@@ -1,10 +1,17 @@
 package AST;
 
 import AST.Nodes.ExprNodes.*;
+import AST.Nodes.FunctionNode;
+import AST.Nodes.ParamNode;
+import AST.Nodes.ProgramNode;
+import AST.Nodes.StmtNodes.AssignNode;
+import AST.Nodes.StmtNodes.BlockNode;
 import AST.NodesInterfaces.ExprNode;
+import AST.NodesInterfaces.StmtNode;
 import lexer.Tokens.Token;
 import lexer.Tokens.TokenType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 //приоритет операций: 2+3*4 = 2+(3*4)
@@ -15,9 +22,8 @@ public class ParserFunny {
     private final List<Token> tokens;
     private int pos = 0;
 
-    public ParserFunny(List<Token> toks, int p){
+    public ParserFunny(List<Token> toks){
         this.tokens = toks;
-        this.pos = p;
     }
 
 
@@ -63,13 +69,13 @@ public class ParserFunny {
         }
         return left;
     }
-    public ExprNode parseFactor(){
-        if(peek().type == TokenType.INT){
+    public ExprNode parseFactor() {
+        if (peek().type == TokenType.INT) {
             Token num_token = advancePeek();
             return new IntNode(Integer.parseInt(num_token.lexeme));
         }
 
-        if(peek().type == TokenType.IDENT) {
+        if (peek().type == TokenType.IDENT) {
             Token identToken = advancePeek();
             return new VarNode(identToken.lexeme);
         }
@@ -88,6 +94,83 @@ public class ParserFunny {
         throw new RuntimeException("Ожидалось выражение (число, переменная или скобка) на строке " + peek().line);
     }
 
+    public StmtNode parseStatement() {
+        //{
+        //x=5;
+        //}
+        if (peek().type == TokenType.LBRACE){// {
+            return parseBlock();
+        }
+
+        if(peek().type == TokenType.IDENT){
+            Token id_token = advancePeek();
+            expect(TokenType.OP_EQ, "Need '='");
+
+            ExprNode val = parseExpr();
+
+            expect(TokenType.SEMI, "Need ';'");
+            return new AssignNode(id_token.lexeme,val);
+        }
+        throw new RuntimeException("Ожидался оператор на строке " + peek().line);
+    }
+    public BlockNode parseBlock() {
+        expect(TokenType.LBRACE, "Need '{'");
+        List<StmtNode> statements = new ArrayList<>();
+
+
+        while (peek().type != TokenType.RBRACE && peek().type != TokenType.EOF) {// }
+            statements.add(parseStatement());
+        }
+
+        expect(TokenType.RBRACE, "Need '}'");
+        return new BlockNode(statements);
+    }
+
+    public ProgramNode parseProgram(){
+        List<FunctionNode> funcs = new ArrayList<>();
+        while(peek().type != TokenType.EOF){
+            funcs.add(parseFunc());
+        }
+        return new ProgramNode(funcs);
+    }
+    public FunctionNode parseFunc(){
+        //function main(a: int) returns res: int[] {
+        //    x = 5;
+        //}
+        expect(TokenType.KW_FUNCTION, "Need 'function'");
+        String name = expect(TokenType.IDENT, "Need function name").lexeme;
+
+        expect(TokenType.LPAREN, "Need '('");
+        List<ParamNode> params = parseParamList();
+        expect(TokenType.RPAREN, "Need ')'");
+
+        expect(TokenType.KW_RETURNS, "Need 'returns'");
+        List<ParamNode> returns = parseParamList();
+
+        BlockNode body = parseBlock();
+        return new FunctionNode(name, params, returns, null, null, body);
+    }
+    public List<ParamNode> parseParamList(){
+        // ParamList -> (IDENT ":" Type ("," IDENT ":" Type)*)
+        List<ParamNode> params = new ArrayList<>();
+        if(peek().type == TokenType.RPAREN || peek().type == TokenType.LBRACE){
+            return params;
+        }
+
+        do {
+            String paramName = expect(TokenType.IDENT, "Need param's name").lexeme;
+            expect(TokenType.COLON, "Need ':'");
+            String type = expect(TokenType.KW_INT, "Need type 'int'").lexeme;
+
+            if (match(TokenType.LBRACKET)) {// int[]
+                expect(TokenType.RBRACKET, "Need ']'");
+                type = "int[]";
+            }
+            params.add(new ParamNode(paramName, type));
+        } while (match(TokenType.COMMA));
+
+        return params;
+    }
 
 
 }
