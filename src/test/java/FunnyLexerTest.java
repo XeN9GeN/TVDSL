@@ -1,5 +1,7 @@
 import java.util.*;
 
+import AST.ASTPrinter;
+import AST.Nodes.StmtNodes.*;
 import AST.ParserFunny;
 import DFA.*;
 import NFA.NFABuild;
@@ -327,4 +329,82 @@ public class FunnyLexerTest {
         System.out.println("Программа успешно распарсена. Найдено функций: " + ast.functions.size());
     }
 
+    @Test
+    public void testParseComplexProgram() {
+        String source =
+                "function foo(a: int[])\n" +
+                        "    requires length(a) > 0\n" +
+                        "    returns r: int\n" +
+                        "    ensures r >= 0\n" +
+                        "{\n" +
+                        "    r = 0;\n" +
+                        "    while (r < length(a))\n" +
+                        "        invariant r <= length(a)\n" +
+                        "    {\n" +
+                        "        assert a[r] >= 0;\n" +
+                        "        assume a[r] == 0;\n" +
+                        "        if (a[r] > 0) { r = r + 1; } else { r = r + 2; }\n" +
+                        "    }\n" +
+                        "}";
+
+        // 1. Лексер
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        List<Token> tokens = lexer.tokenize(source);
+
+        // 2. Парсер
+        ParserFunny parser = new ParserFunny(tokens);
+        ProgramNode ast = parser.parseProgram();
+
+        // 3. Базовые проверки
+        assertNotNull(ast);
+        assertEquals(1, ast.functions.size());
+
+        FunctionNode func = ast.functions.get(0);
+        assertEquals("foo", func.name);
+
+        // 4. Проверка параметров и возвращаемых значений (Массивы!)
+        assertEquals(1, func.params.size());
+        assertEquals("a", func.params.get(0).name);
+        assertEquals("int[]", func.params.get(0).type); // Проверка массива
+
+        assertEquals(1, func.returns.size());
+        assertEquals("r", func.returns.get(0).name);
+        assertEquals("int", func.returns.get(0).type);
+
+        // 5. Проверка контрактов (requires / ensures)
+        assertNotNull(func.requires, "Блок requires не должен быть null");
+        assertNotNull(func.ensures, "Блок ensures не должен быть null");
+
+        // 6. Проверка тела функции
+        assertNotNull(func.body);
+        // Внутри тела: r = 0; и while (...)
+        assertEquals(2, func.body.statements.size());
+
+        // Проверяем, что первый оператор — это присваивание r = 0
+        assertTrue(func.body.statements.get(0) instanceof AssignNode);
+
+        // Проверяем, что второй оператор — это while
+        assertTrue(func.body.statements.get(1) instanceof WhileNode);
+
+        WhileNode whileNode = (WhileNode) func.body.statements.get(1);
+
+        // 7. Проверка инварианта цикла
+        assertNotNull(whileNode.invariant, "Инвариант цикла не должен быть null");
+
+        // 8. Проверка тела цикла (Внутри: assert, assume, if-else)
+        assertTrue(whileNode.body instanceof BlockNode);
+        BlockNode whileBody = (BlockNode) whileNode.body;
+        assertEquals(3, whileBody.statements.size());
+
+        assertTrue(whileBody.statements.get(0) instanceof AssertNode);
+        assertTrue(whileBody.statements.get(1) instanceof AssumeNode);
+        assertTrue(whileBody.statements.get(2) instanceof IfNode);
+
+        // Проверяем, что у if есть else ветка
+        IfNode ifNode = (IfNode) whileBody.statements.get(2);
+        assertNotNull(ifNode.elseBranch, "Ветка else не должна быть null");
+        ASTPrinter.print(ast);
+
+        System.out.println("Сложная программа успешно распарсена! Все проверки AST пройдены.");
+    }
 }
