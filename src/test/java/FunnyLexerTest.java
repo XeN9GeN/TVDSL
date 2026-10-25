@@ -300,7 +300,7 @@ public class FunnyLexerTest {
     }
 
     @Test
-    public void testParseProgram() {
+    public void testParseProgram1() {
         String source = "function add(x: int) returns r: int { r = x + 2 * 3; }";
         FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
         List<Token> tokens = lexer.tokenize(source);
@@ -330,7 +330,7 @@ public class FunnyLexerTest {
     }
 
     @Test
-    public void testParseComplexProgram() {
+    public void testParseProgram2() {
         String source =
                 "function foo(a: int[])\n" +
                         "    requires length(a) > 0\n" +
@@ -406,5 +406,22 @@ public class FunnyLexerTest {
         ASTPrinter.print(ast);
 
         System.out.println("Сложная программа успешно распарсена! Все проверки AST пройдены.");
+    }
+
+    @Test
+    public void testParserErrorRecovery() {
+        String badSource = "function f() returns r: int { r = ; r = 5; }";
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        ParserFunny parser = new ParserFunny(lexer.tokenize(badSource));
+
+        ProgramNode ast = parser.parseProgram();
+
+        //парсер должен найти ошибку, распарсить при этом r=5
+        assertFalse(parser.errors.isEmpty());
+        System.out.println("Найдены ошибки: " + parser.errors);
+
+        assertEquals(1, ast.functions.size());
+        //в блоке должен остаться хотя бы один оператор, если восстановление сработало
+        assertTrue(ast.functions.get(0).body.statements.size() >= 1);
     }
 }

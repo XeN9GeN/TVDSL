@@ -28,7 +28,7 @@ public class ParserFunny {
     public ParserFunny(List<Token> toks){
         this.tokens = toks;
     }
-
+    public final List<String> errors = new ArrayList<>();
 
     private Token peek(){
         return tokens.get(pos);
@@ -198,7 +198,13 @@ public class ParserFunny {
 
 
         while (peek().type != TokenType.RBRACE && peek().type != TokenType.EOF) {// }
-            statements.add(parseStatement());
+            try {
+                StmtNode stmt = parseStatement();
+                if (stmt != null) statements.add(stmt);
+            } catch (RuntimeException e) {
+                errors.add(e.getMessage());
+                synchronize();
+            }
         }
 
         expect(TokenType.RBRACE, "Need '}'");
@@ -307,5 +313,19 @@ public class ParserFunny {
         }
         throw new RuntimeException("Ожидался оператор сравнения (==, !=, <, >, <=, >=) на строке " + peek().line);
     }
+
+    private void synchronize() {
+        while (peek().type != TokenType.EOF) {
+            if (peek().type == TokenType.SEMI) {
+                advancePeek();
+                return;
+            }
+            if (peek().type == TokenType.RBRACE) {
+                return;
+            }
+            advancePeek();//skip trash
+        }
+    }
+
 
 }
