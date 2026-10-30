@@ -29,7 +29,7 @@ public class Scope {
         return null;
     }
 
-    public void updateType(String name, String newtype){
+    public void updateType(String name, String newtype){//if need
         if(vars.containsKey(name)){
             vars.put(name,newtype);
         }else if(parent!=null){

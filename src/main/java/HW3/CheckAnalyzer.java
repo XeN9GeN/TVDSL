@@ -4,6 +4,7 @@ import AST.Nodes.FunctionNode;
 
 import AST.Nodes.*;
 import AST.Nodes.StmtNodes.*;
+import AST.NodesInterfaces.ASTNode;
 import AST.NodesInterfaces.StmtNode;
 
 import java.util.ArrayList;
@@ -112,6 +113,13 @@ public class CheckAnalyzer {
         else if(stmt instanceof  AssumeNode){
             visitPred(((AssumeNode) stmt).predicate,loc_scope);
         }
+    }
+
+    public void visitPred(ASTNode ast, Scope l){
+
+    }
+    public void visitExpr(ASTNode ast, Scope l){
+
     }
 
 
