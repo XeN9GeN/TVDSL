@@ -29,14 +29,6 @@ public class Scope {
         return null;
     }
 
-    public void updateType(String name, String newtype){//if need
-        if(vars.containsKey(name)){
-            vars.put(name,newtype);
-        }else if(parent!=null){
-            parent.updateType(name,newtype);
-        }
-    }
-
     public boolean isDeclared(String name){
         return vars.containsKey(name);
     }

@@ -1,10 +1,16 @@
 package HW3;
 
+import AST.Nodes.ExprNodes.*;
 import AST.Nodes.FunctionNode;
 
 import AST.Nodes.*;
+import AST.Nodes.PredNodes.ComparisonNode;
+import AST.Nodes.PredNodes.LogicalOpNode;
+import AST.Nodes.PredNodes.NotNode;
 import AST.Nodes.StmtNodes.*;
 import AST.NodesInterfaces.ASTNode;
+import AST.NodesInterfaces.ExprNode;
+import AST.NodesInterfaces.PredNode;
 import AST.NodesInterfaces.StmtNode;
 
 import java.util.ArrayList;
@@ -17,6 +23,10 @@ public class CheckAnalyzer {
     private final List<SemanticError> errors = new ArrayList<>();
     private final Map<java.lang.String, FunctionNode> global_funcs = new HashMap<>();
     private final Scope globalfunc_scope = new Scope(null);
+
+    public List<SemanticError> getErrors(){
+        return errors;
+    }
 
     public void analyze(ProgramNode programm){
         for(FunctionNode f: programm.functions){
@@ -96,7 +106,7 @@ public class CheckAnalyzer {
         else if(stmt instanceof IfNode){
             IfNode ifNode = (IfNode) stmt;
             visitPred(ifNode.condition, loc_scope);
-            visitPred(ifNode.thenBranch, loc_scope);
+            visitStmt(ifNode.thenBranch, loc_scope);
             if(ifNode.elseBranch != null) visitStmt(ifNode.elseBranch, loc_scope);
         }
 
@@ -115,13 +125,58 @@ public class CheckAnalyzer {
         }
     }
 
-    public void visitPred(ASTNode ast, Scope l){
-
+    public void visitPred(PredNode pred, Scope scope){
+        if(pred instanceof ComparisonNode){
+            visitExpr(((ComparisonNode) pred).left, scope);
+            visitExpr(((ComparisonNode) pred).right, scope);
+        }
+        else if (pred instanceof LogicalOpNode) {
+            visitPred(((LogicalOpNode) pred).left, scope);
+            visitPred(((LogicalOpNode) pred).right, scope);
+        }
+        else if (pred instanceof NotNode) {
+            visitPred(((NotNode) pred).expr, scope);
+        }
     }
-    public void visitExpr(ASTNode ast, Scope l){
 
+    public void visitExpr(ExprNode expr, Scope l){
+        if(expr instanceof VarNode){
+            String name = ((VarNode) expr).name;
+
+            if(l.getType(name) == null & !global_funcs.containsKey(name)){
+                errors.add(new SemanticError("Неизвестная переменная: '" + name + "'", 0, 0));
+            }
+        }
+
+        else if (expr instanceof BinaryOpNode){
+            visitExpr(((BinaryOpNode) expr).l, l);
+            visitExpr(((BinaryOpNode) expr).r, l);
+        }
+
+        else if (expr instanceof UnaryOpNode){
+            visitExpr(((UnaryOpNode) expr).expr, l);
+        }
+
+        else if(expr instanceof ArrayAccessNode){
+            ArrayAccessNode arr = (ArrayAccessNode) expr;
+            String type = l.getType(arr.arrayName);
+
+            if(type == null){
+                errors.add(new SemanticError("Неизвестный массив: '" + arr.arrayName + "'", 0, 0));
+            } else if (!type.equals(Scope.INT_ARRAY) && !type.equals(Scope.UNKNOWN)) {
+                errors.add(new SemanticError("Переменная '" + arr.arrayName + "' не является массивом", 0, 0));
+            }
+            visitExpr(arr.index, l);
+        }
+
+        else if(expr instanceof FuncCallNode){
+            FuncCallNode call = (FuncCallNode) expr;
+            if(!global_funcs.containsKey(call.functionName)){
+                errors.add(new SemanticError("Вызов неизвестной функции: '" + call.functionName + "'", 0, 0));
+            }
+            for (ExprNode arg : call.args) {
+                visitExpr(arg, l);
+            }
+        }
     }
-
-
-
 }

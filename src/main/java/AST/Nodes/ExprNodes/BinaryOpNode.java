@@ -1,9 +1,10 @@
 package AST.Nodes.ExprNodes;
+import AST.NodesInterfaces.BaseExprNode;
 import AST.NodesInterfaces.ExprNode;
 
 
 //x+y, a*b
-public class BinaryOpNode implements ExprNode {
+public class BinaryOpNode extends BaseExprNode {
     public final String op; //"+", "-", "*", "/"
     public final ExprNode l;
     public final ExprNode r;

@@ -1,10 +1,11 @@
 package AST.Nodes.ExprNodes;
+import AST.NodesInterfaces.BaseExprNode;
 import AST.NodesInterfaces.ExprNode;
 import java.util.List;
 
 
 //add(x.y), length(str)
-public class FuncCallNode implements ExprNode {
+public class FuncCallNode extends BaseExprNode {
     public final String functionName;
     public final List<ExprNode> args;
 

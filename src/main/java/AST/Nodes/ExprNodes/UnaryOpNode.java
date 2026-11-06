@@ -1,9 +1,10 @@
 package AST.Nodes.ExprNodes;
+import AST.NodesInterfaces.BaseExprNode;
 import AST.NodesInterfaces.ExprNode;
 
 
 //-23, -(x+y)
-public class UnaryOpNode implements ExprNode {
+public class UnaryOpNode extends BaseExprNode {
     public final String op;
     public final ExprNode expr;
 
