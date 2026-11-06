@@ -3,6 +3,7 @@ package AST;
 import AST.Nodes.ExprNodes.*;
 import AST.Nodes.FunctionNode;
 import AST.Nodes.ParamNode;
+import AST.Nodes.PredNodes.BoolNode;
 import AST.Nodes.PredNodes.ComparisonNode;
 import AST.Nodes.PredNodes.LogicalOpNode;
 import AST.Nodes.PredNodes.NotNode;
@@ -20,6 +21,7 @@ import java.util.List;
 //приоритет операций: 2+3*4 = 2+(3*4)
 //в порядке возрастания слева направо
 //parseExpr(+,-) --> parseTerm(*, /) --> parseFactor(vars, (), unar -)
+//exprNode - что вычисляется и возвращается значение, stmtNode - команда, инструкция(выполнить цикл, присвоить...)
 
 public class ParserFunny {
     private final List<Token> tokens;
@@ -47,12 +49,6 @@ public class ParserFunny {
         if (peek().type == type) return advancePeek();
         Token t = peek();
         throw new RuntimeException(msg + " (строка " + t.line + ", столбец " + t.s_ind + "). Найден: " + t.type);
-    }
-    private Token peekNext() {
-        if (pos + 1 < tokens.size()) {
-            return tokens.get(pos + 1);
-        }
-        return tokens.get(tokens.size() - 1);
     }
 
 
@@ -207,7 +203,10 @@ public class ParserFunny {
             }
         }
 
-        expect(TokenType.RBRACE, "Need '}'");
+        if(!match(TokenType.RBRACE)){
+            Token t = peek();
+            errors.add("Need '}' (строка " + t.line + ", столбец " + t.s_ind + "). Найден: " + t.type);
+        }
         return new BlockNode(statements);
     }
 
@@ -246,7 +245,7 @@ public class ParserFunny {
         return new FunctionNode(name, params, returns, requires, ensures, body);
     }
     public List<ParamNode> parseParamList(){
-        // ParamList -> (IDENT ":" Type ("," IDENT ":" Type)*)
+        // ParamList -> (IDENT ":" String ("," IDENT ":" String)*)
         List<ParamNode> params = new ArrayList<>();
         if(peek().type == TokenType.RPAREN || peek().type == TokenType.LBRACE){
             return params;
@@ -255,13 +254,13 @@ public class ParserFunny {
         do {
             String paramName = expect(TokenType.IDENT, "Need param's name").lexeme;
             expect(TokenType.COLON, "Need ':'");
-            String type = expect(TokenType.KW_INT, "Need type 'int'").lexeme;
+            String string = expect(TokenType.KW_INT, "Need string 'int'").lexeme;
 
             if (match(TokenType.LBRACKET)) {// int[]
                 expect(TokenType.RBRACKET, "Need ']'");
-                type = "int[]";
+                string = "int[]";
             }
-            params.add(new ParamNode(paramName, type));
+            params.add(new ParamNode(paramName, string));
         } while (match(TokenType.COMMA));
 
         return params;
@@ -269,12 +268,22 @@ public class ParserFunny {
 
 
     public PredNode parsePredicate() {
-        PredNode left = parseAndExpr();
+        //low prior ->
+        PredNode left = parseOrExpr();
 
-        while (peek().type == TokenType.KW_OR || peek().type == TokenType.OP_IMPLIES) {
-            Token optoken = advancePeek();
+        while (peek().type == TokenType.OP_IMPLIES) {
+            advancePeek();
+            PredNode right = parsePredicate();
+            return new LogicalOpNode("->",left,right);
+        }
+        return left;
+    }
+    public PredNode parseOrExpr(){
+        PredNode left = parseAndExpr();
+        while(peek().type == TokenType.KW_OR){
+            advancePeek();
             PredNode right = parseAndExpr();
-            left = new LogicalOpNode(optoken.lexeme, left, right);
+            left = new LogicalOpNode("or",left,right);
         }
         return left;
     }
@@ -296,25 +305,32 @@ public class ParserFunny {
     }
     //(x+y>0)
     public PredNode parseComparison(){
+        if (match(TokenType.KW_TRUE)) {
+            return new BoolNode(true);
+        }
+        if (match(TokenType.KW_FALSE)) {
+            return new BoolNode(false);
+        }
+
         if(match(TokenType.LPAREN)){//smth like (Pred...)
             PredNode pred = parsePredicate();
             expect(TokenType.RPAREN, "Need ')");
             return pred;
         }
 
-        ExprNode left = parseExpr();
+        ExprNode left = parseExpr();//x>0 -> x
 
         if (peek().type == TokenType.OP_EEQ || peek().type == TokenType.OP_NEQ ||
                 peek().type == TokenType.OP_LT || peek().type == TokenType.OP_LE ||
                 peek().type == TokenType.OP_GT || peek().type == TokenType.OP_GE) {
             Token optoken = advancePeek();
-            ExprNode right = parseExpr();
+            ExprNode right = parseExpr();//x>0 -> 0
             return new ComparisonNode(optoken.lexeme,left,right);
         }
-        throw new RuntimeException("Ожидался оператор сравнения (==, !=, <, >, <=, >=) на строке " + peek().line);
+        throw new RuntimeException("Need оператор сравнения (==, !=, <, >, <=, >=) на строке " + peek().line);
     }
 
-    private void synchronize() {
+    private void synchronize() {//error check
         while (peek().type != TokenType.EOF) {
             if (peek().type == TokenType.SEMI) {
                 advancePeek();

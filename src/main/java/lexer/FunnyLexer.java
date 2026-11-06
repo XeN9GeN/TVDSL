@@ -130,7 +130,7 @@ public class FunnyLexer {
                 throw new LexerException("Token error before: '" + first_char + "'", start_line, start_ind);
             }
 
-            String lexeme = sourse.substring(pos, lastEnd);
+            String lexeme = sourse.substring(pos, lastEnd);//pos...j
             if(lexeme.equals("0") && lastEnd < sourse.length()){//HW1 ведущий ноль
                 char next = sourse.charAt(lastEnd);
                 if (next >= '0' && next <= '9')

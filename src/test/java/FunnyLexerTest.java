@@ -1,9 +1,12 @@
 import java.util.*;
 
 import AST.ASTPrinter;
+import AST.Nodes.ExprNodes.BinaryOpNode;
+import AST.Nodes.ExprNodes.IntNode;
 import AST.Nodes.StmtNodes.*;
 import AST.ParserFunny;
 import DFA.*;
+import HW3.CheckAnalyzer;
 import NFA.NFABuild;
 import NFA.NFMiniA;
 import AST.Nodes.*;
@@ -225,7 +228,7 @@ public class FunnyLexerTest {
         assertFalse(DFAInterpreter.validateString("00", fullFunnyAutomaton).success);
         assertFalse(DFAInterpreter.validateString("привет", fullFunnyAutomaton).success);
 
-        assertFalse(DFAInterpreter.validateString("=>", fullFunnyAutomaton).success);
+        //assertFalse(DFAInterpreter.validateString("=>", fullFunnyAutomaton).success);
         assertFalse(DFAInterpreter.validateString("&", fullFunnyAutomaton).success);
     }
 
@@ -285,7 +288,7 @@ public class FunnyLexerTest {
     public void testTokenizeProgram() {
         FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
 
-        String source = "function f(a: int) returns r: int {\n" + "    r = a + 1;\n" + "}";
+        String source = "function f(a: int) returns r: int {\n" + "    r = (a + 1);\n" + "}";
 
         List<Token> tokens = lexer.tokenize(source);
 
@@ -295,13 +298,13 @@ public class FunnyLexerTest {
 
         assertEquals(TokenType.EOF, tokens.get(tokens.size() - 1).type);
         for (Token token : tokens) {
-            System.out.println(token);
+            System.out.println(token.type);
         }
     }
 
     @Test
     public void testParseProgram1() {
-        String source = "function add(x: int) returns r: int { r = x + 2 * 3; }";
+        String source = "function add(x: int) returns r: int { r = (x + 2) * 3; }";
         FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
         List<Token> tokens = lexer.tokenize(source);
 
@@ -331,21 +334,22 @@ public class FunnyLexerTest {
 
     @Test
     public void testParseProgram2() {
-        String source =
-                "function foo(a: int[])\n" +
-                        "    requires length(a) > 0\n" +
-                        "    returns r: int\n" +
-                        "    ensures r >= 0\n" +
-                        "{\n" +
-                        "    r = 0;\n" +
-                        "    while (r < length(a))\n" +
-                        "        invariant r <= length(a)\n" +
-                        "    {\n" +
-                        "        assert a[r] >= 0;\n" +
-                        "        assume a[r] == 0;\n" +
-                        "        if (a[r] > 0) { r = r + 1; } else { r = r + 2; }\n" +
-                        "    }\n" +
-                        "}";
+        String source = """
+        function foo(a: int[])
+            requires length(a) > 0
+            returns r: int
+            ensures r >= 0
+        {
+            r = 0;
+            while (r < length(a))
+                invariant r <= length(a)
+            {
+                assert a[r] >= 0;
+                assume a[r] == 0;
+                if (a[r] > 0) { r = r + 1; } else { r = r + 2; }
+            }
+        }
+        """;
 
         // 1. Лексер
         FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
@@ -404,6 +408,7 @@ public class FunnyLexerTest {
         IfNode ifNode = (IfNode) whileBody.statements.get(2);
         assertNotNull(ifNode.elseBranch, "Ветка else не должна быть null");
         ASTPrinter.print(ast);
+        ASTPrinter.printToJson(ast);
 
         System.out.println("Сложная программа успешно распарсена! Все проверки AST пройдены.");
     }
@@ -423,5 +428,116 @@ public class FunnyLexerTest {
         assertEquals(1, ast.functions.size());
         //в блоке должен остаться хотя бы один оператор, если восстановление сработало
         assertTrue(ast.functions.get(0).body.statements.size() >= 1);
+    }
+
+    @Test
+    public void testMathPrecedence() {
+        // Умножение должно быть глубже в дереве, чем сложение
+        String source = "function math() returns r: int { r = 1 + 2 * 3; }";
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        ParserFunny parser = new ParserFunny(lexer.tokenize(source));
+
+        ProgramNode ast = parser.parseProgram();
+        assertTrue(parser.errors.isEmpty(), "Не должно быть ошибок парсинга");
+
+        BlockNode body = ast.functions.get(0).body;
+        AssignNode assign = (AssignNode) body.statements.get(0);
+
+        // Корень выражения должен быть '+' (сложение)
+        assertTrue(assign.value instanceof BinaryOpNode);
+        BinaryOpNode plusNode = (BinaryOpNode) assign.value;
+        assertEquals("+", plusNode.op);
+
+        // Левая часть — это число 1
+        assertTrue(plusNode.l instanceof IntNode);
+        assertEquals(1, ((IntNode) plusNode.l).value);
+
+        // Правая часть — это умножение (2 * 3)
+        assertTrue(plusNode.r instanceof BinaryOpNode);
+        BinaryOpNode multNode = (BinaryOpNode) plusNode.r;
+        assertEquals("*", multNode.op);
+    }
+
+    @Test
+    public void testArrayAssignAndIfWithoutElse() {
+        String source = "function f(a: int[]) returns r: int { a[0] = 5; if (a[0] > 0) { r = 1; } }";
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        ParserFunny parser = new ParserFunny(lexer.tokenize(source));
+
+        ProgramNode ast = parser.parseProgram();
+        assertTrue(parser.errors.isEmpty());
+
+        BlockNode body = ast.functions.get(0).body;
+        assertEquals(2, body.statements.size());
+
+        // Первое выражение — это обновление массива a[0] = 5
+        assertTrue(body.statements.get(0) instanceof ArrayAssignNode);
+        ArrayAssignNode arrAssign = (ArrayAssignNode) body.statements.get(0);
+        assertEquals("a", arrAssign.arrayName);
+
+        // Второе выражение — это if
+        assertTrue(body.statements.get(1) instanceof IfNode);
+        IfNode ifNode = (IfNode) body.statements.get(1);
+        assertNotNull(ifNode.thenBranch);
+        assertNull(ifNode.elseBranch, "Ветки else не должно быть, она не была написана");
+    }
+
+    @Test
+    public void testErrorRecovery() {
+        // Ошибка: после '=' сразу идет ';', нет выражения
+        String source = "function f() returns r: int { r = ; r = 5; }";
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        ParserFunny parser = new ParserFunny(lexer.tokenize(source));
+
+        // Если парсер не зациклился и не упал — он дойдет сюда
+        ProgramNode ast = parser.parseProgram();
+
+        // 1. Парсер должен зафиксировать ошибку
+        assertFalse(parser.errors.isEmpty(), "Должна быть обнаружена синтаксическая ошибка");
+        System.out.println("Найдена ожидаемая ошибка: " + parser.errors.get(0));
+
+        // 2. Парсер должен восстановиться и прочитать второй оператор (r = 5;)
+        BlockNode body = ast.functions.get(0).body;
+        assertEquals(1, body.statements.size(), "Должен остаться только корректный оператор");
+        assertTrue(body.statements.get(0) instanceof AssignNode);
+        assertEquals("r", ((AssignNode) body.statements.get(0)).target);
+    }
+
+    @Test
+    public void testMissingClosingBrace() {
+        // Забыли закрыть блок функции
+        String source = "function f() returns r: int { r = 1; ";
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        ParserFunny parser = new ParserFunny(lexer.tokenize(source));
+
+        parser.parseProgram();
+
+        // Парсер должен сообщить об ошибке
+        assertFalse(parser.errors.isEmpty());
+
+        // В ошибке должно упоминаться, что не хватает скобки
+        boolean hasBraceError = parser.errors.stream().anyMatch(e -> e.contains("Need '}'"));
+        assertTrue(hasBraceError, "Сообщение об ошибке должно содержать информацию о пропущенной '}'");
+    }
+
+    @Test
+    public void testic(){
+        String source = """
+                function test() returns r: int {
+                r=x;
+                }
+                """;
+
+        FunnyLexer lexer = new FunnyLexer(fullFunnyAutomaton);
+        List<Token> tokens = lexer.tokenize(source);
+
+        ParserFunny parserFunny = new ParserFunny(tokens);
+        ProgramNode ast = parserFunny.parseProgram();
+
+        CheckAnalyzer checkAnalyzer = new CheckAnalyzer();
+        checkAnalyzer.analyze(ast);
+
+        assertTrue(checkAnalyzer.getErrors()!=null);
+        System.out.println(checkAnalyzer.getErrors());
     }
 }

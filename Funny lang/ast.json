@@ -1,0 +1,182 @@
+{
+  "functions": [
+    {
+      "type": "Function",
+      "name": "foo",
+      "requires": {
+        "type": "Comparison",
+        "op": ">",
+        "left": {
+          "type": "FuncCall",
+          "functionName": "length",
+          "args": [
+            {
+              "type": "Var",
+              "name": "a"
+            }
+          ]
+        },
+        "right": {
+          "type": "Int",
+          "value": 0
+        }
+      },
+      "body": {
+        "type": "Block",
+        "statements": [
+          {
+            "type": "Assign",
+            "target": "r",
+            "value": {
+              "type": "Int",
+              "value": 0
+            }
+          },
+          {
+            "type": "While",
+            "condition": {
+              "type": "Comparison",
+              "op": "<",
+              "left": {
+                "type": "Var",
+                "name": "r"
+              },
+              "right": {
+                "type": "FuncCall",
+                "functionName": "length",
+                "args": [
+                  {
+                    "type": "Var",
+                    "name": "a"
+                  }
+                ]
+              }
+            },
+            "invariant": {
+              "type": "Comparison",
+              "op": "<=",
+              "left": {
+                "type": "Var",
+                "name": "r"
+              },
+              "right": {
+                "type": "FuncCall",
+                "functionName": "length",
+                "args": [
+                  {
+                    "type": "Var",
+                    "name": "a"
+                  }
+                ]
+              }
+            },
+            "body": {
+              "type": "Block",
+              "statements": [
+                {
+                  "type": "Assert",
+                  "predicate": {
+                    "type": "Comparison",
+                    "op": ">=",
+                    "left": {
+                      "type": "ArrayAccess",
+                      "arrayName": "a",
+                      "index": {
+                        "type": "Var",
+                        "name": "r"
+                      }
+                    },
+                    "right": {
+                      "type": "Int",
+                      "value": 0
+                    }
+                  }
+                },
+                {
+                  "type": "Assume",
+                  "predicate": {
+                    "type": "Comparison",
+                    "op": "==",
+                    "left": {
+                      "type": "ArrayAccess",
+                      "arrayName": "a",
+                      "index": {
+                        "type": "Var",
+                        "name": "r"
+                      }
+                    },
+                    "right": {
+                      "type": "Int",
+                      "value": 0
+                    }
+                  }
+                },
+                {
+                  "type": "If",
+                  "condition": {
+                    "type": "Comparison",
+                    "op": ">",
+                    "left": {
+                      "type": "ArrayAccess",
+                      "arrayName": "a",
+                      "index": {
+                        "type": "Var",
+                        "name": "r"
+                      }
+                    },
+                    "right": {
+                      "type": "Int",
+                      "value": 0
+                    }
+                  },
+                  "thenBranch": {
+                    "type": "Block",
+                    "statements": [
+                      {
+                        "type": "Assign",
+                        "target": "r",
+                        "value": {
+                          "type": "BinaryOp",
+                          "op": "+",
+                          "left": {
+                            "type": "Var",
+                            "name": "r"
+                          },
+                          "right": {
+                            "type": "Int",
+                            "value": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "elseBranch": {
+                    "type": "Block",
+                    "statements": [
+                      {
+                        "type": "Assign",
+                        "target": "r",
+                        "value": {
+                          "type": "BinaryOp",
+                          "op": "+",
+                          "left": {
+                            "type": "Var",
+                            "name": "r"
+                          },
+                          "right": {
+                            "type": "Int",
+                            "value": 2
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
