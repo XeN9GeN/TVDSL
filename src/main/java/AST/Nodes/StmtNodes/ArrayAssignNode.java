@@ -1,11 +1,12 @@
 package AST.Nodes.StmtNodes;
 
+import AST.NodesInterfaces.BaseStmtNode;
 import AST.NodesInterfaces.ExprNode;
 import AST.NodesInterfaces.StmtNode;
 
 
 //a[i] = expr
-public class ArrayAssignNode implements StmtNode {
+public class ArrayAssignNode extends BaseStmtNode {
     public final String arrayName;
     public final ExprNode index;
     public final ExprNode value;

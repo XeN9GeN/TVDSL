@@ -4,7 +4,7 @@ import AST.NodesInterfaces.ExprNode;
 
 
 //a[i]
-public class ArrayAccessNode  extends BaseExprNode {
+public class ArrayAccessNode extends BaseExprNode {
     public final String arrayName;
     public final ExprNode index;
 

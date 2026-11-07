@@ -1,12 +1,13 @@
 package AST.Nodes;
 import AST.Nodes.StmtNodes.BlockNode;
 import AST.NodesInterfaces.ASTNode;
+import AST.NodesInterfaces.BaseStmtNode;
 import AST.NodesInterfaces.PredNode;
 
 import java.util.List;
 
 //класс узла функции
-public class FunctionNode implements ASTNode {
+public class FunctionNode extends BaseStmtNode {
     public final String name;
     public final List<ParamNode> params;
     public final List<ParamNode> returns;

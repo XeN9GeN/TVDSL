@@ -59,7 +59,10 @@ public class ParserFunny {
             Token op_token = advancePeek();
             ExprNode right = parseTerm();
 
-            left = new BinaryOpNode(op_token.lexeme, left, right);
+            BinaryOpNode node = new BinaryOpNode(op_token.lexeme, left, right);
+            node.line = op_token.line;
+            node.col = op_token.s_ind;
+            left = node;
         }
         return left;
     }
@@ -70,28 +73,38 @@ public class ParserFunny {
             Token op_token = advancePeek();
             ExprNode right = parseFactor();
 
-            left = new BinaryOpNode(op_token.lexeme, left,right);
+            BinaryOpNode node = new BinaryOpNode(op_token.lexeme, left,right);
+            node.line = op_token.line;
+            node.col = op_token.s_ind;
+            left = node;
         }
         return left;
     }
     public ExprNode parseFactor() {
         if (peek().type == TokenType.INT) {
             Token num_token = advancePeek();
-            return new IntNode(Integer.parseInt(num_token.lexeme));
+            IntNode node = new IntNode(Integer.parseInt(num_token.lexeme));
+            node.line = num_token.line;
+            node.col = num_token.s_ind;
+            return node;
         }
 
         if (peek().type == TokenType.IDENT || peek().type == TokenType.KW_LENGTH) {
             Token identToken = advancePeek();
 
             if (peek().type == TokenType.LBRACKET) {
-                advancePeek();//[  --> a[i]
+                advancePeek();
                 ExprNode index = parseExpr();
                 expect(TokenType.RBRACKET, "Need ']'");
-                return new ArrayAccessNode(identToken.lexeme, index);
+
+                ArrayAccessNode node = new ArrayAccessNode(identToken.lexeme, index);
+                node.line = identToken.line;
+                node.col = identToken.s_ind;
+                return node;
             }
 
             if (peek().type == TokenType.LPAREN) {
-                advancePeek();//(  --> length(a) or like that
+                advancePeek();
                 List<ExprNode> args = new ArrayList<>();
 
                 if (peek().type != TokenType.RPAREN) {
@@ -99,10 +112,17 @@ public class ParserFunny {
                         args.add(parseExpr());
                     } while (match(TokenType.COMMA));
                 }
+
                 expect(TokenType.RPAREN, "Need ')'");
-                return new FuncCallNode(identToken.lexeme, args);
+                FuncCallNode node = new FuncCallNode(identToken.lexeme, args);
+                node.line = identToken.line;
+                node.col = identToken.s_ind;
+                return node;
             }
-            return new VarNode(identToken.lexeme);
+            VarNode node = new VarNode(identToken.lexeme);
+            node.line = identToken.line;
+            node.col = identToken.s_ind;
+            return node;
         }
 
         if (match(TokenType.LPAREN)) {
@@ -112,21 +132,24 @@ public class ParserFunny {
         }
 
         if (match(TokenType.OP_MINUS)) {
+            Token opToken = tokens.get(pos - 1);
             ExprNode expr = parseFactor();
-            return new UnaryOpNode("-", expr);
+            UnaryOpNode node = new UnaryOpNode("-", expr);
+            node.line = opToken.line;
+            node.col = opToken.s_ind;
+            return node;
         }
 
         throw new RuntimeException("Need выражение (число, переменная или скобка) на строке " + peek().line);
     }
 
     public StmtNode parseStatement() {
-        //{x=5;}
-        if (peek().type == TokenType.LBRACE){// {
+        if (peek().type == TokenType.LBRACE){
             return parseBlock();
         }
 
-        // if (cond) stmt [else stmt]
         if(match(TokenType.KW_IF)){
+            Token ifToken = tokens.get(pos - 1);
             expect(TokenType.LPAREN, "Need '(");
             PredNode cond = parsePredicate();
             expect(TokenType.RPAREN, "Need ')'");
@@ -136,11 +159,14 @@ public class ParserFunny {
             if(match(TokenType.KW_ELSE)){
                 else_branch = parseStatement();
             }
-            return new IfNode(cond, then_branch, else_branch);
+            IfNode node = new IfNode(cond, then_branch, else_branch);
+            node.line = ifToken.line;
+            node.col = ifToken.s_ind;
+            return node;
         }
 
-        //while (cond) [inv P] stmt
         if(match(TokenType.KW_WHILE)){
+            Token whileToken = tokens.get(pos - 1);
             expect(TokenType.LPAREN, "Need '(");
             PredNode cond = parsePredicate();
             expect(TokenType.RPAREN, "Need ')'");
@@ -149,51 +175,68 @@ public class ParserFunny {
             if(match(TokenType.KW_INVARIANT)){
                 inv = parsePredicate();
             }
+
             StmtNode body = parseStatement();
-            return new WhileNode(cond,inv,body);
+            WhileNode node = new WhileNode(cond,inv,body);
+            node.line = whileToken.line;
+            node.col = whileToken.s_ind;
+            return node;
         }
 
-        //assert/assume P
         if(match(TokenType.KW_ASSERT)){
+            Token assertToken = tokens.get(pos - 1);
             PredNode pred = parsePredicate();
             expect(TokenType.SEMI, "Need ';");
-            return new AssertNode(pred);
+            AssertNode node = new AssertNode(pred);
+            node.line = assertToken.line;
+            node.col = assertToken.s_ind;
+            return node;
         }
         if (match(TokenType.KW_ASSUME)) {
+            Token assumeToken = tokens.get(pos - 1);
             PredNode pred = parsePredicate();
             expect(TokenType.SEMI, "Need ';'");
-            return new AssumeNode(pred);
+            AssumeNode node = new AssumeNode(pred);
+            node.line = assumeToken.line;
+            node.col = assumeToken.s_ind;
+            return node;
         }
 
-        //IDENT = Expr ";" или a[i] = Expr ;
         if (peek().type == TokenType.IDENT) {
             Token identToken = advancePeek();
 
-            //a[i] = ...
             if (peek().type == TokenType.LBRACKET) {
                 advancePeek();
                 ExprNode index = parseExpr();
                 expect(TokenType.RBRACKET, "Need ']'");
                 expect(TokenType.OP_EQ, "Need '='");
+
                 ExprNode value = parseExpr();
                 expect(TokenType.SEMI, "Need ';'");
-                return new ArrayAssignNode(identToken.lexeme, index, value);
+
+                ArrayAssignNode node = new ArrayAssignNode(identToken.lexeme, index, value);
+                node.line = identToken.line;
+                node.col = identToken.s_ind;
+                return node;
             }
 
             expect(TokenType.OP_EQ, "Need '='");
             ExprNode value = parseExpr();
             expect(TokenType.SEMI, "Need ';'");
-            return new AssignNode(identToken.lexeme, value);
+            AssignNode node = new AssignNode(identToken.lexeme, value);
+            node.line = identToken.line;
+            node.col = identToken.s_ind;
+            return node;
         }
 
         throw new RuntimeException("Неизвестный оператор на строке " + peek().line);
     }
+
     public BlockNode parseBlock() {
-        expect(TokenType.LBRACE, "Need '{'");
+        Token lbraceToken = expect(TokenType.LBRACE, "Need '{'");
         List<StmtNode> statements = new ArrayList<>();
 
-
-        while (peek().type != TokenType.RBRACE && peek().type != TokenType.EOF) {// }
+        while (peek().type != TokenType.RBRACE && peek().type != TokenType.EOF) {
             try {
                 StmtNode stmt = parseStatement();
                 if (stmt != null) statements.add(stmt);
@@ -207,7 +250,10 @@ public class ParserFunny {
             Token t = peek();
             errors.add("Need '}' (строка " + t.line + ", столбец " + t.s_ind + "). Найден: " + t.type);
         }
-        return new BlockNode(statements);
+        BlockNode node = new BlockNode(statements);
+        node.line = lbraceToken.line;
+        node.col = lbraceToken.s_ind;
+        return node;
     }
 
     public ProgramNode parseProgram(){
@@ -245,22 +291,25 @@ public class ParserFunny {
         return new FunctionNode(name, params, returns, requires, ensures, body);
     }
     public List<ParamNode> parseParamList(){
-        // ParamList -> (IDENT ":" String ("," IDENT ":" String)*)
         List<ParamNode> params = new ArrayList<>();
         if(peek().type == TokenType.RPAREN || peek().type == TokenType.LBRACE){
             return params;
         }
 
         do {
-            String paramName = expect(TokenType.IDENT, "Need param's name").lexeme;
+            Token paramNameToken = expect(TokenType.IDENT, "Need param's name");
+            String paramName = paramNameToken.lexeme;
             expect(TokenType.COLON, "Need ':'");
             String string = expect(TokenType.KW_INT, "Need string 'int'").lexeme;
 
-            if (match(TokenType.LBRACKET)) {// int[]
+            if (match(TokenType.LBRACKET)) {
                 expect(TokenType.RBRACKET, "Need ']'");
                 string = "int[]";
             }
-            params.add(new ParamNode(paramName, string));
+            ParamNode node = new ParamNode(paramName, string);
+            node.line = paramNameToken.line;
+            node.col = paramNameToken.s_ind;
+            params.add(node);
         } while (match(TokenType.COMMA));
 
         return params;
@@ -268,22 +317,27 @@ public class ParserFunny {
 
 
     public PredNode parsePredicate() {
-        //low prior ->
         PredNode left = parseOrExpr();
 
         while (peek().type == TokenType.OP_IMPLIES) {
-            advancePeek();
+            Token opToken = advancePeek();
             PredNode right = parsePredicate();
-            return new LogicalOpNode("->",left,right);
+            LogicalOpNode node = new LogicalOpNode("->",left,right);
+            node.line = opToken.line;
+            node.col = opToken.s_ind;
+            return node;
         }
         return left;
     }
     public PredNode parseOrExpr(){
         PredNode left = parseAndExpr();
         while(peek().type == TokenType.KW_OR){
-            advancePeek();
+            Token opToken = advancePeek();
             PredNode right = parseAndExpr();
-            left = new LogicalOpNode("or",left,right);
+            LogicalOpNode node = new LogicalOpNode("or",left,right);
+            node.line = opToken.line;
+            node.col = opToken.s_ind;
+            left = node;
         }
         return left;
     }
@@ -291,41 +345,58 @@ public class ParserFunny {
         PredNode left = parseNotExpr();
 
         while(peek().type == TokenType.KW_AND){
-            advancePeek();
+            Token opToken = advancePeek();
             PredNode right = parseNotExpr();
-            left = new LogicalOpNode("and",left,right);
+            LogicalOpNode node = new LogicalOpNode("and",left,right);
+            node.line = opToken.line;
+            node.col = opToken.s_ind;
+            left = node;
         }
         return left;
     }
     public PredNode parseNotExpr() {
         if (match(TokenType.KW_NOT)) {
-            return new NotNode(parseNotExpr());
+            Token notToken = tokens.get(pos - 1);
+            NotNode node = new NotNode(parseNotExpr());
+            node.line = notToken.line;
+            node.col = notToken.s_ind;
+            return node;
         }
         return parseComparison();
     }
-    //(x+y>0)
     public PredNode parseComparison(){
         if (match(TokenType.KW_TRUE)) {
-            return new BoolNode(true);
+            Token t = tokens.get(pos - 1);
+            BoolNode node = new BoolNode(true);
+            node.line = t.line;
+            node.col = t.s_ind;
+            return node;
         }
         if (match(TokenType.KW_FALSE)) {
-            return new BoolNode(false);
+            Token t = tokens.get(pos - 1);
+            BoolNode node = new BoolNode(false);
+            node.line = t.line;
+            node.col = t.s_ind;
+            return node;
         }
 
-        if(match(TokenType.LPAREN)){//smth like (Pred...)
+        if(match(TokenType.LPAREN)){
             PredNode pred = parsePredicate();
             expect(TokenType.RPAREN, "Need ')");
             return pred;
         }
 
-        ExprNode left = parseExpr();//x>0 -> x
+        ExprNode left = parseExpr();
 
         if (peek().type == TokenType.OP_EEQ || peek().type == TokenType.OP_NEQ ||
                 peek().type == TokenType.OP_LT || peek().type == TokenType.OP_LE ||
                 peek().type == TokenType.OP_GT || peek().type == TokenType.OP_GE) {
             Token optoken = advancePeek();
-            ExprNode right = parseExpr();//x>0 -> 0
-            return new ComparisonNode(optoken.lexeme,left,right);
+            ExprNode right = parseExpr();
+            ComparisonNode node = new ComparisonNode(optoken.lexeme,left,right);
+            node.line = optoken.line;
+            node.col = optoken.s_ind;
+            return node;
         }
         throw new RuntimeException("Need оператор сравнения (==, !=, <, >, <=, >=) на строке " + peek().line);
     }

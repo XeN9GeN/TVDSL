@@ -1,10 +1,11 @@
 package AST.Nodes.PredNodes;
 
+import AST.NodesInterfaces.BasePredNode;
 import AST.NodesInterfaces.PredNode;
 
 
 //A or B, C and T
-public class LogicalOpNode implements PredNode {
+public class LogicalOpNode extends BasePredNode {
     public final String op; // "and", "or", "->"
     public final PredNode left;
     public final PredNode right;

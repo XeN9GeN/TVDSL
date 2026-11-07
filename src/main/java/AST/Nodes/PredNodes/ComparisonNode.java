@@ -1,11 +1,12 @@
 package AST.Nodes.PredNodes;
 
 
+import AST.NodesInterfaces.BasePredNode;
 import AST.NodesInterfaces.ExprNode;
 import AST.NodesInterfaces.PredNode;
 
 //x==y, r>=0
-public class ComparisonNode implements PredNode {
+public class ComparisonNode extends BasePredNode {
     public final String op; //"==", "!="
     public final ExprNode left;
     public final ExprNode right;

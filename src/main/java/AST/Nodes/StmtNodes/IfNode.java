@@ -1,11 +1,12 @@
 package AST.Nodes.StmtNodes;
 
+import AST.NodesInterfaces.BaseStmtNode;
 import AST.NodesInterfaces.PredNode;
 import AST.NodesInterfaces.StmtNode;
 
 
 //if cond stmt else stmt
-public class IfNode implements StmtNode {
+public class IfNode extends BaseStmtNode {
     public final PredNode condition;
     public final StmtNode thenBranch;
     public final StmtNode elseBranch;

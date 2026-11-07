@@ -14,6 +14,6 @@ public class SemanticError {
 
     @Override
     public String toString() {
-        return "[Ошибка] Строка " + line + ", Столбец " + column + ": " + message;
+        return "[Ошибка] Строка " + line + ", Столбец(символ) " + column + ": " + message;
     }
 }

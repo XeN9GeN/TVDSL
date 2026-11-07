@@ -8,10 +8,9 @@ import AST.Nodes.PredNodes.ComparisonNode;
 import AST.Nodes.PredNodes.LogicalOpNode;
 import AST.Nodes.PredNodes.NotNode;
 import AST.Nodes.StmtNodes.*;
-import AST.NodesInterfaces.ASTNode;
-import AST.NodesInterfaces.ExprNode;
 import AST.NodesInterfaces.PredNode;
 import AST.NodesInterfaces.StmtNode;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +22,13 @@ public class CheckAnalyzer {
     private final List<SemanticError> errors = new ArrayList<>();
     private final Map<java.lang.String, FunctionNode> global_funcs = new HashMap<>();
     private final Scope globalfunc_scope = new Scope(null);
+    private final TypeResolver typeResolver;
+
+    public CheckAnalyzer(){
+        this.typeResolver = new TypeResolver(errors, global_funcs);
+    }
+
+
 
     public List<SemanticError> getErrors(){
         return errors;
@@ -39,8 +45,6 @@ public class CheckAnalyzer {
             }
         }
 
-        //global_funcs.put("length", null);
-
         for(FunctionNode f: programm.functions){
             analyzeFunc(f);
         }
@@ -51,24 +55,22 @@ public class CheckAnalyzer {
 
         for(ParamNode p: f.params){
             if(local_scope.isDeclared(p.name)){
-                errors.add(new SemanticError("repeated announs: '" + f.name + "'", 0, 0));
+                errors.add(new SemanticError("repeated announs: '" + f.name + "'", p.line, p.col));
             }
             local_scope.declare(p.name, p.type);
         }
 
         for(ParamNode p: f.returns){
             if(local_scope.isDeclared(p.name)){
-                errors.add(new SemanticError("repeated announs: '" + f.name + "'", 0, 0));
+                errors.add(new SemanticError("repeated announs: '" + f.name + "'", p.line, p.col));
             }
             local_scope.declare(p.name, p.type);
         }
 
-        //TODO user parse?
-
         if(f.requires!=null) visitPred(f.requires, local_scope);
         if(f.ensures!=null) visitPred(f.ensures, local_scope);
 
-        visitStmt(f.body, local_scope);//body func
+        visitStmt(f.body, local_scope);
     }
 
     private void visitStmt(StmtNode stmt, Scope loc_scope){
@@ -78,12 +80,19 @@ public class CheckAnalyzer {
             }
         }
 
-        else if(stmt instanceof AssignNode){
+        else if(stmt instanceof AssignNode) {
             AssignNode asg = (AssignNode) stmt;
-            visitExpr(asg.value, loc_scope);
 
-            if(!loc_scope.isDeclared(asg.target)){
+            String leftType = loc_scope.getType(asg.target);
+            String rightType = typeResolver.resolveType(asg.value, loc_scope);
+
+            if (leftType == null) {
                 loc_scope.declare(asg.target, Scope.UNKNOWN);
+            }
+            else {
+                if (!leftType.equals(Scope.UNKNOWN) && !rightType.equals(Scope.UNKNOWN) && !leftType.equals(rightType)) {
+                    errors.add(new SemanticError("Несовместимые типы при присваивании: нельзя записать " + rightType + " в " + leftType, asg.line, asg.col));
+                }
             }
         }
 
@@ -92,15 +101,22 @@ public class CheckAnalyzer {
             String type = loc_scope.getType(arrayAssignNode.arrayName);
 
             if(type == null){
-                errors.add(new SemanticError("unknown array: '" + arrayAssignNode.arrayName + "'", 0, 0));
+                errors.add(new SemanticError("unknown array: '" + arrayAssignNode.arrayName + "'", arrayAssignNode.line, arrayAssignNode.col));
 
             }
             else if(!type.equals(Scope.INT_ARRAY)){
-                errors.add(new SemanticError("Переменная '" + arrayAssignNode.arrayName + "' не является массивом", 0, 0));
+                errors.add(new SemanticError("Переменная '" + arrayAssignNode.arrayName + "' не является массивом", arrayAssignNode.line, arrayAssignNode.col));
             }
 
-            visitExpr(arrayAssignNode.index, loc_scope);
-            visitExpr(arrayAssignNode.value, loc_scope);
+            String indexType = typeResolver.resolveType(arrayAssignNode.index, loc_scope);
+            if (!indexType.equals(Scope.INT) && !indexType.equals(Scope.UNKNOWN)) {
+                errors.add(new SemanticError("Индекс массива должен быть типа int", arrayAssignNode.line, arrayAssignNode.col));
+            }
+
+            String valueType = typeResolver.resolveType(arrayAssignNode.value, loc_scope);
+            if (!valueType.equals(Scope.INT) && !valueType.equals(Scope.UNKNOWN)) {
+                errors.add(new SemanticError("Значение для массива должно быть типа int", arrayAssignNode.line, arrayAssignNode.col));
+            }
         }
 
         else if(stmt instanceof IfNode){
@@ -126,57 +142,23 @@ public class CheckAnalyzer {
     }
 
     public void visitPred(PredNode pred, Scope scope){
-        if(pred instanceof ComparisonNode){
-            visitExpr(((ComparisonNode) pred).left, scope);
-            visitExpr(((ComparisonNode) pred).right, scope);
+        if (pred instanceof ComparisonNode) {
+            ComparisonNode cmp = (ComparisonNode) pred;
+
+            String leftT = typeResolver.resolveType(cmp.left, scope);
+            String rightT = typeResolver.resolveType(cmp.right, scope);
+
+            if ((!leftT.equals(Scope.INT) && !leftT.equals(Scope.UNKNOWN)) || (!rightT.equals(Scope.INT) && !rightT.equals(Scope.UNKNOWN))) {
+                errors.add(new SemanticError("Оператор сравнения '" + cmp.op + "' требует int операнды", cmp.line, cmp.col));
+            }
         }
+
         else if (pred instanceof LogicalOpNode) {
             visitPred(((LogicalOpNode) pred).left, scope);
             visitPred(((LogicalOpNode) pred).right, scope);
         }
         else if (pred instanceof NotNode) {
             visitPred(((NotNode) pred).expr, scope);
-        }
-    }
-
-    public void visitExpr(ExprNode expr, Scope l){
-        if(expr instanceof VarNode){
-            String name = ((VarNode) expr).name;
-
-            if(l.getType(name) == null & !global_funcs.containsKey(name)){
-                errors.add(new SemanticError("Неизвестная переменная: '" + name + "'", 0, 0));
-            }
-        }
-
-        else if (expr instanceof BinaryOpNode){
-            visitExpr(((BinaryOpNode) expr).l, l);
-            visitExpr(((BinaryOpNode) expr).r, l);
-        }
-
-        else if (expr instanceof UnaryOpNode){
-            visitExpr(((UnaryOpNode) expr).expr, l);
-        }
-
-        else if(expr instanceof ArrayAccessNode){
-            ArrayAccessNode arr = (ArrayAccessNode) expr;
-            String type = l.getType(arr.arrayName);
-
-            if(type == null){
-                errors.add(new SemanticError("Неизвестный массив: '" + arr.arrayName + "'", 0, 0));
-            } else if (!type.equals(Scope.INT_ARRAY) && !type.equals(Scope.UNKNOWN)) {
-                errors.add(new SemanticError("Переменная '" + arr.arrayName + "' не является массивом", 0, 0));
-            }
-            visitExpr(arr.index, l);
-        }
-
-        else if(expr instanceof FuncCallNode){
-            FuncCallNode call = (FuncCallNode) expr;
-            if(!global_funcs.containsKey(call.functionName)){
-                errors.add(new SemanticError("Вызов неизвестной функции: '" + call.functionName + "'", 0, 0));
-            }
-            for (ExprNode arg : call.args) {
-                visitExpr(arg, l);
-            }
         }
     }
 }
