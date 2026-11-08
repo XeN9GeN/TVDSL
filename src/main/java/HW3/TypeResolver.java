@@ -29,6 +29,10 @@ public class TypeResolver {
             String type = scope.getType(name);
             if(type!=null)
                 resolveType = type;
+
+            else if (!global_functs.containsKey(name)) {//before announcement
+                errors.add(new SemanticError("Unknown variable: '" + name + "'", ((VarNode) expr).line,((VarNode) expr).col));
+            }
         }
 
         else if (expr instanceof BinaryOpNode){

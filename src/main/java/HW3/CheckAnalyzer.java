@@ -11,16 +11,17 @@ import AST.Nodes.StmtNodes.*;
 import AST.NodesInterfaces.PredNode;
 import AST.NodesInterfaces.StmtNode;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class CheckAnalyzer {
     private final List<SemanticError> errors = new ArrayList<>();
     private final Map<java.lang.String, FunctionNode> global_funcs = new HashMap<>();
+    private final Set<String> declaredLocals = new HashSet<>();
+
     private final Scope globalfunc_scope = new Scope(null);
     private final TypeResolver typeResolver;
+
+
 
     public CheckAnalyzer(){
         this.typeResolver = new TypeResolver(errors, global_funcs);
@@ -29,6 +30,8 @@ public class CheckAnalyzer {
     public List<SemanticError> getErrors(){
         return errors;
     }
+
+
 
     public void analyze(ProgramNode programm){
         for(FunctionNode f: programm.functions){
@@ -48,6 +51,8 @@ public class CheckAnalyzer {
 
     public void analyzeFunc(FunctionNode f){
         Scope local_scope = new Scope(globalfunc_scope);
+        declaredLocals.clear();
+
 
         for(ParamNode p: f.params){//read only
             if(local_scope.isDeclared(p.name)){
@@ -67,6 +72,13 @@ public class CheckAnalyzer {
         if(f.ensures!=null) visitPred(f.ensures, local_scope);
 
         visitStmt(f.body, local_scope);
+
+
+        for(String name: declaredLocals){//bonus
+            if(Scope.UNKNOWN.equals(local_scope.getType(name))){
+                errors.add(new SemanticError("Coundnt withdraw type of local var: '" + name + "'", 0,0));
+            }
+        }
     }
 
     private void visitStmt(StmtNode stmt, Scope loc_scope){
@@ -82,15 +94,18 @@ public class CheckAnalyzer {
             String leftType = loc_scope.getType(asg.target);
             String rightType = typeResolver.resolveType(asg.value, loc_scope);
 
-            if (leftType == null) {//первое присваивание без аннотации
+            if (leftType == null) {//первое присваивание без аннотации(объявление)
+                declaredLocals.add((asg.target));
+
                 if(!rightType.equals(Scope.UNKNOWN)){
+                    //bonus
                     loc_scope.declare(asg.target, rightType);
                 }
                 else loc_scope.declare(asg.target, Scope.UNKNOWN);
             }
-            else if (leftType.equals(Scope.UNKNOWN)){
+            else if (leftType.equals(Scope.UNKNOWN)){//have announcement without type
                 if(!rightType.equals(Scope.UNKNOWN)){
-                    loc_scope.declare(asg.target, rightType);
+                    loc_scope.declare(asg.target, rightType);//rewrite
                 }
             }
 
