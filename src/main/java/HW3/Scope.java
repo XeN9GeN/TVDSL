@@ -54,4 +54,11 @@ public class Scope {
         if (vars.containsKey(name)) return readOnlyNames.contains(name);
         return parent != null && parent.isReadOnly(name);
     }
+
+
+    public Map<String, String> getAllVars() {
+        return vars;
+    }
+
+
 }

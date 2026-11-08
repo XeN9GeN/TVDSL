@@ -15,10 +15,12 @@ import java.util.*;
 
 public class CheckAnalyzer {
     private final List<SemanticError> errors = new ArrayList<>();
-    private final Map<java.lang.String, FunctionNode> global_funcs = new HashMap<>();
+    public final Map<java.lang.String, FunctionNode> global_funcs = new HashMap<>();
     private final Set<String> declaredLocals = new HashSet<>();
 
     private final Scope globalfunc_scope = new Scope(null);
+    public Scope lastProcessedScope;
+
     private final TypeResolver typeResolver;
 
 
@@ -79,6 +81,7 @@ public class CheckAnalyzer {
                 errors.add(new SemanticError("Coundnt withdraw type of local var: '" + name + "'", 0,0));
             }
         }
+        this.lastProcessedScope = local_scope;
     }
 
     private void visitStmt(StmtNode stmt, Scope loc_scope){

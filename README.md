@@ -15,7 +15,7 @@ src/main/java/
     DFAAutomaton.java  — финальный автомат/состояние ловушка/сериализация в JSON
     DFAInterpreter.java — прогон строки по ДКА
 src/test/java/
-  FunnyLexerTest.java  — JUnit 5 тесты
+  FunnyHW1_2Test.java  — JUnit 5 тесты
 target/dfa_table.json  — экспортированная таблица переходов
 ```
 
