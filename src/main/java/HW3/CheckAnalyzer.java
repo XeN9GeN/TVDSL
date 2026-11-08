@@ -11,12 +11,10 @@ import AST.Nodes.StmtNodes.*;
 import AST.NodesInterfaces.PredNode;
 import AST.NodesInterfaces.StmtNode;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 public class CheckAnalyzer {
     private final List<SemanticError> errors = new ArrayList<>();
@@ -28,8 +26,6 @@ public class CheckAnalyzer {
         this.typeResolver = new TypeResolver(errors, global_funcs);
     }
 
-
-
     public List<SemanticError> getErrors(){
         return errors;
     }
@@ -37,7 +33,7 @@ public class CheckAnalyzer {
     public void analyze(ProgramNode programm){
         for(FunctionNode f: programm.functions){
             if(global_funcs.containsKey(f.name)){
-                errors.add(new SemanticError("repeated announs: '" + f.name + "'", 0, 0));
+                errors.add(new SemanticError("repeated announs: '" + f.name + "'", f.line, f.col));
             }
             else{
                 global_funcs.put(f.name, f);
@@ -53,18 +49,18 @@ public class CheckAnalyzer {
     public void analyzeFunc(FunctionNode f){
         Scope local_scope = new Scope(globalfunc_scope);
 
-        for(ParamNode p: f.params){
+        for(ParamNode p: f.params){//read only
             if(local_scope.isDeclared(p.name)){
-                errors.add(new SemanticError("repeated announs: '" + f.name + "'", p.line, p.col));
+                errors.add(new SemanticError("Repeated declaration of name: '" + p.name + "'", p.line, p.col));
             }
-            local_scope.declare(p.name, p.type);
+            local_scope.declare(p.name, p.type, true);
         }
 
         for(ParamNode p: f.returns){
             if(local_scope.isDeclared(p.name)){
-                errors.add(new SemanticError("repeated announs: '" + f.name + "'", p.line, p.col));
+                errors.add(new SemanticError("Repeated declaration of name: '" + p.name + "'", p.line, p.col));
             }
-            local_scope.declare(p.name, p.type);
+            local_scope.declare(p.name, p.type, false);
         }
 
         if(f.requires!=null) visitPred(f.requires, local_scope);
@@ -80,24 +76,43 @@ public class CheckAnalyzer {
             }
         }
 
-        else if(stmt instanceof AssignNode) {
+        else if(stmt instanceof AssignNode) {//x = a[1]
             AssignNode asg = (AssignNode) stmt;
 
             String leftType = loc_scope.getType(asg.target);
             String rightType = typeResolver.resolveType(asg.value, loc_scope);
 
-            if (leftType == null) {
-                loc_scope.declare(asg.target, Scope.UNKNOWN);
+            if (leftType == null) {//первое присваивание без аннотации
+                if(!rightType.equals(Scope.UNKNOWN)){
+                    loc_scope.declare(asg.target, rightType);
+                }
+                else loc_scope.declare(asg.target, Scope.UNKNOWN);
             }
+            else if (leftType.equals(Scope.UNKNOWN)){
+                if(!rightType.equals(Scope.UNKNOWN)){
+                    loc_scope.declare(asg.target, rightType);
+                }
+            }
+
+            else if(loc_scope.isReadOnly(asg.target)){
+                errors.add(new SemanticError("Cant assign for read-only parameter: '" + asg.target + "'",
+                        asg.line, asg.col));
+            }
+
             else {
                 if (!leftType.equals(Scope.UNKNOWN) && !rightType.equals(Scope.UNKNOWN) && !leftType.equals(rightType)) {
-                    errors.add(new SemanticError("Несовместимые типы при присваивании: нельзя записать " + rightType + " в " + leftType, asg.line, asg.col));
+                    errors.add(new SemanticError("Incompatible types in assignment: cannot assign " + rightType + " to " + leftType, asg.line, asg.col));
                 }
             }
         }
 
-        else if(stmt instanceof ArrayAssignNode){
+        else if(stmt instanceof ArrayAssignNode){//a[1] = x
             ArrayAssignNode arrayAssignNode = (ArrayAssignNode) stmt;
+
+            if(loc_scope.isReadOnly(arrayAssignNode.arrayName)){
+                errors.add(new SemanticError("Cant assign array read-only parameter: '" + arrayAssignNode.arrayName + "'", arrayAssignNode.line, arrayAssignNode.col));
+            }
+
             String type = loc_scope.getType(arrayAssignNode.arrayName);
 
             if(type == null){
@@ -105,17 +120,17 @@ public class CheckAnalyzer {
 
             }
             else if(!type.equals(Scope.INT_ARRAY)){
-                errors.add(new SemanticError("Переменная '" + arrayAssignNode.arrayName + "' не является массивом", arrayAssignNode.line, arrayAssignNode.col));
+                errors.add(new SemanticError("Variable '" + arrayAssignNode.arrayName + "' is not an array", arrayAssignNode.line, arrayAssignNode.col));
             }
 
             String indexType = typeResolver.resolveType(arrayAssignNode.index, loc_scope);
             if (!indexType.equals(Scope.INT) && !indexType.equals(Scope.UNKNOWN)) {
-                errors.add(new SemanticError("Индекс массива должен быть типа int", arrayAssignNode.line, arrayAssignNode.col));
+                errors.add(new SemanticError("Array index must be of type int", arrayAssignNode.line, arrayAssignNode.col));
             }
 
             String valueType = typeResolver.resolveType(arrayAssignNode.value, loc_scope);
             if (!valueType.equals(Scope.INT) && !valueType.equals(Scope.UNKNOWN)) {
-                errors.add(new SemanticError("Значение для массива должно быть типа int", arrayAssignNode.line, arrayAssignNode.col));
+                errors.add(new SemanticError("Array value must be of type int", arrayAssignNode.line, arrayAssignNode.col));
             }
         }
 
@@ -149,7 +164,7 @@ public class CheckAnalyzer {
             String rightT = typeResolver.resolveType(cmp.right, scope);
 
             if ((!leftT.equals(Scope.INT) && !leftT.equals(Scope.UNKNOWN)) || (!rightT.equals(Scope.INT) && !rightT.equals(Scope.UNKNOWN))) {
-                errors.add(new SemanticError("Оператор сравнения '" + cmp.op + "' требует int операнды", cmp.line, cmp.col));
+                errors.add(new SemanticError("Comparison operator '" + cmp.op + "' requires int operands", cmp.line, cmp.col));
             }
         }
 
