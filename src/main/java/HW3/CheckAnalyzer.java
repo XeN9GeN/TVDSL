@@ -13,6 +13,8 @@ import AST.NodesInterfaces.StmtNode;
 
 import java.util.*;
 
+//объявление имён, проверка повторных; типы сравнений;
+//обход оперов и предикатов на можно/нельзя так сделать
 public class CheckAnalyzer {
     private final List<SemanticError> errors = new ArrayList<>();
     public final Map<java.lang.String, FunctionNode> global_funcs = new HashMap<>();

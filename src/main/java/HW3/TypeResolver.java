@@ -5,6 +5,8 @@ import AST.NodesInterfaces.ExprNode;
 import java.util.List;
 import java.util.Map;
 
+//возврат типа любого узла; проверка внутри выражений(корректны ли они по типам);
+//неизвестные переменные и тд
 public class TypeResolver {
     private final List<SemanticError> errors;
     private final Map<String, FunctionNode> global_functs;
