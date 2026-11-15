@@ -10,8 +10,11 @@ import HW4.Optimizations.LDCE;
 import HW4.Optimizations.Optimizer;
 import lexer.FunnyLexer;
 import org.junit.jupiter.api.Test;
+import HW4.LifeInterval;
+import HW4.GreedyGraph;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -164,5 +167,81 @@ public class FunnyHW4Test {
                 "Условный переход должен остаться");
         assertTrue(optimizedCode.stream().anyMatch(s -> s.contains("r =")),
                 "Возвращаемая переменная r должна остаться в обоих ветках");
+    }
+
+    @Test
+    public void testInterferenceGraphAndColoring() {
+        // Программа, в которой 'a' живет долго, а временные переменные коротко
+        String source = """
+            function main(a: int) returns r: int {
+                b = a + 1;
+                c = a + 2;
+                r = b + c;
+            }
+            """;
+
+        FunnyLexer lexer = new FunnyLexer(automaton);
+        ParserFunny parser = new ParserFunny(lexer.tokenize(source));
+        ProgramNode ast = parser.parseProgram();
+
+        // 1. Генерируем IR
+        IRGeneration irGen = new IRGeneration(ast);
+        irGen.generateStmt(ast.functions.get(0).body);
+        List<String> irCode = irGen.getGeneratedCode();
+
+        System.out.println("=== IR КОД ===");
+        for (String s : irCode) System.out.println(s);
+        System.out.println();
+
+        // 2. Строим CFG (получится 1 блок)
+        List<Block> blocks = CFGBlocks.buildCFG(irCode);
+        Block block = blocks.get(0);
+
+        // 3. Анализ живости (LifeInterval)
+        LifeInterval lifeInterval = new LifeInterval(null, 0, 0);
+        Map<String, LifeInterval> intervals = lifeInterval.countLifenessTime(block);
+
+        System.out.println("=== ИНТЕРВАЛЫ ЖИЗНИ (Liveness) ===");
+        intervals.forEach((var, interval) ->
+                System.out.println(var + ": [" + interval.getStart() + ", " + interval.getEnd() + "]")
+        );
+        System.out.println();
+
+        // 4. Строим граф конфликтов (GreedyGraph)
+        GreedyGraph graph = new GreedyGraph();
+        graph.buildGraph(intervals);
+
+        System.out.println("=== ГРАФ КОНФЛИКТОВ ===");
+        graph.getGraph().forEach((v, edges) -> {
+            if (!edges.isEmpty()) {
+                System.out.println(v + " --- " + edges);
+            }
+        });
+        System.out.println();
+
+        // 5. Раскраска графа (Greedy Coloring)
+        Map<String, Integer> colors = graph.greedyColoring();
+
+        System.out.println("=== ЖАДНАЯ РАСКРАСКА (Регистры) ===");
+        colors.forEach((v, color) -> System.out.println(v + " -> Регистр #" + color));
+        System.out.println();
+
+        // 6. Метрика
+        int usedRegisters = colors.values().stream().max(Integer::compare).orElse(0) + 1;
+        System.out.println("ИТОГО ИСПОЛЬЗОВАНО РЕГИСТРОВ: " + usedRegisters);
+
+        // 7. Проверки
+        assertFalse(intervals.isEmpty(), "Интервалы жизни не должны быть пустыми");
+        assertFalse(colors.isEmpty(), "Раскраска не должна быть пустой");
+
+        // Граф должен иметь ребра (переменные конфликтуют)
+        boolean hasEdges = graph.getGraph().values().stream().anyMatch(edges -> !edges.isEmpty());
+        assertTrue(hasEdges, "Граф должен содержать конфликты (ребра)");
+
+        // Проверяем, что ни одна переменная не получила отрицательный регистр
+        assertTrue(colors.values().stream().allMatch(c -> c >= 0));
+
+        // Проверяем, что количество регистров адекватно (в данном примере должно быть больше 0 и меньше 10)
+        assertTrue(usedRegisters > 0 && usedRegisters < 10, "Количество регистров должно быть разумным");
     }
 }

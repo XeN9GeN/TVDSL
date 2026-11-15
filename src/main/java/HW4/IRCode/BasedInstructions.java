@@ -16,7 +16,7 @@ public class BasedInstructions {
 
 
     public BasedInstructions(ProgramNode annotatedAst) {
-        annotated_AST = annotatedAst;
+        this.annotated_AST = annotatedAst;
         this.code = new ArrayList<>();
     }
 

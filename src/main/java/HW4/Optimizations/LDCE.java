@@ -67,7 +67,6 @@ public class LDCE {
             } catch (NumberFormatException e) {
                 usedVars.add(token);
             }
-
         }
     }
 }
