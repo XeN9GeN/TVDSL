@@ -1,24 +1,13 @@
-t1 = x + 1
-r = t1
-t2 = a[0]
-t3 = t2 + 5
-x = t3
-if x > 10 goto L1
+t5 = 5
+x = t5
+if x > 0 goto L1
 goto L2
 L L1
-t4 = call foo, x
-y = t4
+t9 = x
+y = t9
+t10 = y
+r = t10
 goto L3
 L L2
-y = 0
+r = 0
 L L3
-i = 0
-L L4
-if i < 5 goto L5
-goto L6
-L L5
-t5 = i + 1
-i = t5
-goto L4
-L L6
-res = y

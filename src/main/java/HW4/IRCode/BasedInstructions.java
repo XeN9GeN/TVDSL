@@ -1,4 +1,4 @@
-package HW4;
+package HW4.IRCode;
 
 import AST.Nodes.ProgramNode;
 

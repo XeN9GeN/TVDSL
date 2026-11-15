@@ -1,8 +1,6 @@
-package HW4;
+package HW4.IRCode;
 
 import AST.Nodes.ExprNodes.*;
-import AST.Nodes.FunctionNode;
-import AST.Nodes.ParamNode;
 import AST.Nodes.PredNodes.BoolNode;
 import AST.Nodes.PredNodes.ComparisonNode;
 import AST.Nodes.PredNodes.LogicalOpNode;
