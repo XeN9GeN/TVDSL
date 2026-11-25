@@ -47,3 +47,52 @@ accept_S4:
 	:: (! (((count==0)))) -> goto accept_S4
 	od;
 }
+never S1 {    /* !([] ((count<=2))) */
+T0_init:
+	do
+	:: atomic { (! (((count<=2)))) -> assert(!(! (((count<=2))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never S2 {    /* !([] ((count>=0))) */
+T0_init:
+	do
+	:: atomic { (! (((count>=0)))) -> assert(!(! (((count>=0))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never S3 {    /* !([] (! (err))) */
+T0_init:
+	do
+	:: atomic { (! ((! (err)))) -> assert(!(! ((! (err))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never L1 {    /* !([] ((! (enq)) || (<> ((deq) || (reject))))) */
+T0_init:
+	do
+	:: (! ((! (enq))) && ! (((deq) || (reject)))) -> goto accept_S4
+	:: (1) -> goto T0_init
+	od;
+accept_S4:
+	do
+	:: (! (((deq) || (reject)))) -> goto accept_S4
+	od;
+}
+never L2 {    /* !([] ((! ((count>0))) || (<> ((count==0))))) */
+T0_init:
+	do
+	:: (! ((! ((count>0)))) && ! (((count==0)))) -> goto accept_S4
+	:: (1) -> goto T0_init
+	od;
+accept_S4:
+	do
+	:: (! (((count==0)))) -> goto accept_S4
+	od;
+}

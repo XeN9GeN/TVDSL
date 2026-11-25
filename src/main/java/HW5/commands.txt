@@ -1,0 +1,26 @@
+cd src/main/java/HW5/queue_right
+spin -a queue.pml
+gcc -O2 -o pan pan.c
+mkdir -p results traces
+
+# S1
+rm -f queue.pml.trail
+./pan -a -f -N S1 > results/S1.txt 2>&1
+
+# S2
+rm -f queue.pml.trail
+./pan -a -f -N S2 > results/S2.txt 2>&1
+
+rm -f queue.pml.trail
+./pan -a -f -N S3 > results/S3.txt 2>&1
+
+rm -f queue.pml.trail
+./pan -a -f -N L1 > results/L1.txt 2>&1
+
+
+rm -f queue.pml.trail
+./pan -a -f -N L2 > results/L2.txt 2>&1
+
+# Воспроизведение trail, если он создан проверкой
+cp queue.pml.trail traces/L2.trail
+spin -t -p queue.pml > traces/L2.txt 2>&1

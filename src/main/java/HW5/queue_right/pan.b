@@ -67,11 +67,76 @@
 		;
 		goto R999;
 
+		 /* CLAIM L2 */
+;
+		;
+		;
+		;
+		
+	case 17: // STATE 13
+		;
+		p_restor(II);
+		;
+		;
+		goto R999;
+
+		 /* CLAIM L1 */
+;
+		;
+		;
+		;
+		
+	case 20: // STATE 13
+		;
+		p_restor(II);
+		;
+		;
+		goto R999;
+
+		 /* CLAIM S3 */
+;
+		
+	case 21: // STATE 1
+		goto R999;
+
+	case 22: // STATE 10
+		;
+		p_restor(II);
+		;
+		;
+		goto R999;
+
+		 /* CLAIM S2 */
+;
+		
+	case 23: // STATE 1
+		goto R999;
+
+	case 24: // STATE 10
+		;
+		p_restor(II);
+		;
+		;
+		goto R999;
+
+		 /* CLAIM S1 */
+;
+		
+	case 25: // STATE 1
+		goto R999;
+
+	case 26: // STATE 10
+		;
+		p_restor(II);
+		;
+		;
+		goto R999;
+
 		 /* PROC Environment */
 ;
 		;
 		
-	case 16: // STATE 5
+	case 28: // STATE 5
 		;
 		now.count = trpt->bup.ovals[3];
 		now.reject = trpt->bup.ovals[2];
@@ -81,7 +146,23 @@
 		ungrab_ints(trpt->bup.ovals, 4);
 		goto R999;
 
-	case 17: // STATE 7
+	case 29: // STATE 8
+		;
+		now.full_reject_done = trpt->bup.ovals[1];
+		now.draining = trpt->bup.ovals[0];
+		;
+		ungrab_ints(trpt->bup.ovals, 2);
+		goto R999;
+;
+		
+	case 30: // STATE 12
+		goto R999;
+;
+		
+	case 31: // STATE 10
+		goto R999;
+
+	case 32: // STATE 14
 		;
 		now.enq = trpt->bup.oval;
 		;
@@ -89,16 +170,17 @@
 ;
 		;
 		
-	case 19: // STATE 12
+	case 34: // STATE 20
 		;
+		now.full_reject_done = trpt->bup.ovals[3];
 		now.reject = trpt->bup.ovals[2];
 		now.deq = trpt->bup.ovals[1];
 		now.enq = trpt->bup.ovals[0];
 		;
-		ungrab_ints(trpt->bup.ovals, 3);
+		ungrab_ints(trpt->bup.ovals, 4);
 		goto R999;
 
-	case 20: // STATE 14
+	case 35: // STATE 22
 		;
 		now.reject = trpt->bup.oval;
 		;
@@ -106,7 +188,7 @@
 ;
 		;
 		
-	case 22: // STATE 20
+	case 37: // STATE 28
 		;
 		now.count = trpt->bup.ovals[3];
 		now.reject = trpt->bup.ovals[2];
@@ -116,7 +198,23 @@
 		ungrab_ints(trpt->bup.ovals, 4);
 		goto R999;
 
-	case 23: // STATE 22
+	case 38: // STATE 31
+		;
+		now.full_reject_done = trpt->bup.ovals[1];
+		now.draining = trpt->bup.ovals[0];
+		;
+		ungrab_ints(trpt->bup.ovals, 2);
+		goto R999;
+;
+		
+	case 39: // STATE 35
+		goto R999;
+;
+		
+	case 40: // STATE 33
+		goto R999;
+
+	case 41: // STATE 37
 		;
 		now.deq = trpt->bup.oval;
 		;
@@ -124,7 +222,7 @@
 ;
 		;
 		
-	case 25: // STATE 27
+	case 43: // STATE 42
 		;
 		now.reject = trpt->bup.ovals[2];
 		now.deq = trpt->bup.ovals[1];
@@ -133,13 +231,13 @@
 		ungrab_ints(trpt->bup.ovals, 3);
 		goto R999;
 
-	case 26: // STATE 29
+	case 44: // STATE 44
 		;
 		now.reject = trpt->bup.oval;
 		;
 		goto R999;
 
-	case 27: // STATE 34
+	case 45: // STATE 49
 		;
 		p_restor(II);
 		;
