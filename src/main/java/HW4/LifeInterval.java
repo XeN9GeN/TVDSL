@@ -22,8 +22,12 @@ public class LifeInterval {
     public int getStart() { return start_life_ind; }
     public int getEnd() { return end_life_ind; }
 
-    public Map<String, LifeInterval> countLifenessTime(Block block){
+    public Map<String, LifeInterval> countLifenessTime(Block block, Set<String> liveInVars){
         Map<String, LifeInterval> lifeIntervalMap = new HashMap<>();//имя переменной - её интервал жизни
+
+        for (String var : liveInVars) {
+            lifeIntervalMap.put(var, new LifeInterval(var, 0, 0));
+        }
 
         for(int i=0; i<block.label_body.size();i++){
             String instance = block.label_body.get(i).trim();
@@ -79,7 +83,7 @@ public class LifeInterval {
         }
         String cleaned = expr.replaceAll("\"[^\"]*\"", " ");
 
-        String[] tokens = cleaned.replaceAll("[^a-zA-Z0-9_.]", " ").split("\\s+");
+        String[] tokens = cleaned.replaceAll("[^a-zA-Z0-9_.$]", " ").split("\\s+");
         Set<String> keywords = Set.of("if", "else", "goto", "call", "return", "param", "Function", "assert", "assume", "true", "false", "null");
 
         boolean skipNext = false;

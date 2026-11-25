@@ -22,7 +22,7 @@ public class BasedInstructions {
 
     public String newTemp(){
         this.temp_counter++;
-        return "t" + temp_counter;
+        return "$t" + temp_counter;
     }
 
     public String newLabel(){

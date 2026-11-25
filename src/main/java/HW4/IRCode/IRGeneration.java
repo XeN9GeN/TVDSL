@@ -1,6 +1,7 @@
 package HW4.IRCode;
 
 import AST.Nodes.ExprNodes.*;
+import AST.Nodes.FunctionNode;
 import AST.Nodes.PredNodes.BoolNode;
 import AST.Nodes.PredNodes.ComparisonNode;
 import AST.Nodes.PredNodes.LogicalOpNode;
@@ -175,13 +176,21 @@ public class IRGeneration {
             }
 
             case AssertNode assertNode -> {
-                generateJump(assertNode.predicate, basedInstructions.newLabel(), basedInstructions.newLabel());
+                generateExprString((ExprNode) assertNode.predicate);
             }
             case AssumeNode assumeNode -> {
-                generateJump(assumeNode.predicate, basedInstructions.newLabel(), basedInstructions.newLabel());
+                generateExprString((ExprNode) assumeNode.predicate);
             }
 
             default -> throw new IllegalStateException("Unexpected value: " + stmtNode);
+        }
+    }
+
+    public void generateProgram(ProgramNode program) {
+        for (FunctionNode func : program.functions) {
+            basedInstructions.addToCode("Function " + func.name + ":");
+            generateStmt(func.body);
+            basedInstructions.addToCode("Return");
         }
     }
 }

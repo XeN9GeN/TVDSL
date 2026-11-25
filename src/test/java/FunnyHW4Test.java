@@ -15,6 +15,7 @@ import HW4.GreedyGraph;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -59,12 +60,15 @@ public class FunnyHW4Test {
         List<String> irCode = irGen.getGeneratedCode();
         HW4Saver.saveIR(irCode, "ir_output.txt");
 
-        assertTrue(irCode.stream().anyMatch(s -> s.matches("t\\d+ = a\\[0\\]")), "Должен быть доступ к массиву");
-        assertTrue(irCode.stream().anyMatch(s -> s.matches("t\\d+ = t\\d+ \\+ 5")), "Должна быть операция сложения");
+        assertTrue(irCode.stream().anyMatch(s -> s.matches("\\$t\\d+ = a\\[0\\]")), "Должен быть доступ к массиву");
+        assertTrue(irCode.stream().anyMatch(s -> s.matches("\\$t\\d+ = \\$t\\d+ \\+ 5")), "Должна быть операция сложения");
+
         assertTrue(irCode.stream().anyMatch(s -> s.matches("if x > 10 goto L\\d+")), "Должен быть условный переход для if");
         assertTrue(irCode.stream().anyMatch(s -> s.startsWith("goto ")), "Должны быть безусловные переходы");
+
         assertTrue(irCode.stream().anyMatch(s -> s.matches("if i < 5 goto L\\d+")), "Должен быть условный переход для while");
-        assertTrue(irCode.stream().anyMatch(s -> s.matches("t\\d+ = call foo, x")), "Должен быть вызов функции foo");
+
+        assertTrue(irCode.stream().anyMatch(s -> s.matches("\\$t\\d+ = call foo, x")), "Должен быть вызов функции foo");
     }
 
     @Test
@@ -186,7 +190,7 @@ public class FunnyHW4Test {
 
         // 1. Генерируем IR
         IRGeneration irGen = new IRGeneration(ast);
-        irGen.generateStmt(ast.functions.get(0).body);
+        irGen.generateProgram(ast);
         List<String> irCode = irGen.getGeneratedCode();
 
         System.out.println("=== IR КОД ===");
@@ -199,7 +203,7 @@ public class FunnyHW4Test {
 
         // 3. Анализ живости (LifeInterval)
         LifeInterval lifeInterval = new LifeInterval(null, 0, 0);
-        Map<String, LifeInterval> intervals = lifeInterval.countLifenessTime(block);
+        Map<String, LifeInterval> intervals = lifeInterval.countLifenessTime(block, Set.of("a","b"));
 
         System.out.println("=== ИНТЕРВАЛЫ ЖИЗНИ (Liveness) ===");
         intervals.forEach((var, interval) ->

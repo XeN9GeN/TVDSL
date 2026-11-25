@@ -1,12 +1,12 @@
-t5 = 5
-x = t5
+$t5 = 5
+x = $t5
 if x > 0 goto L1
 goto L2
 L L1
-t9 = x
-y = t9
-t10 = y
-r = t10
+$t9 = x
+y = $t9
+$t10 = y
+r = $t10
 goto L3
 L L2
 r = 0

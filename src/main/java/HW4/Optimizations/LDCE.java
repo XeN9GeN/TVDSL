@@ -13,22 +13,27 @@ public class LDCE {
         liveOutVars = vars;
     }
 
-    public static boolean applyDCE(Block block) {
+    public static Set<String> getLiveOutVars() {
+        return liveOutVars;
+    }
+
+    public static boolean applyDCE(Block block, Set<String> liveOutVars) {
         boolean changed = false;
         java.util.Set<String> usedVars = new java.util.HashSet<>(liveOutVars);
 
         for (String inst : block.label_body) {
-            if (inst.contains("call") || inst.contains("[")) {
-                String rhs = inst.contains("=") ? inst.split("=", 2)[1].trim() : inst;
-                extractVars(rhs, usedVars);
-                continue;
-            }
-            if (inst.contains("=") && !inst.contains("if")) {
+            if (inst.contains("=") || inst.contains("if")) {
                 String[] parts = inst.split("=", 2);
+
                 if (parts.length > 1) {
                     extractVars(parts[1].trim(), usedVars);
                 }
-            } else {
+
+                if(parts[0].contains("[")){
+                    extractVars(parts[0].trim(), usedVars);
+                }
+            }
+            else{
                 extractVars(inst, usedVars);
             }
         }
@@ -36,12 +41,15 @@ public class LDCE {
         for (int i = block.label_body.size() - 1; i >= 0; i--) {
             String inst = block.label_body.get(i);
 
-            if (inst.contains("call") || inst.contains("[")) {
+            if (inst.contains("call")) {
                 continue;
             }
 
             if (inst.contains("=") && !inst.contains("if")) {
                 String dest = inst.split("=", 2)[0].trim();
+                if (dest.contains("[")) {
+                    continue;
+                }
 
                 if (!usedVars.contains(dest)) {
                     block.label_body.remove(i);
@@ -52,8 +60,8 @@ public class LDCE {
         return changed;
     }
 
-    private static void extractVars(String inst, java.util.Set<String> usedVars) {
-        String[] tokens = inst.replaceAll("[^a-zA-Z0-9_]", " ").split("\\s+");
+    static void extractVars(String inst, java.util.Set<String> usedVars) {
+        String[] tokens = inst.replaceAll("[^a-zA-Z0-9_$]", " ").split("\\s+");
         for (String token : tokens) {
             if (token.isEmpty()) continue;
 
