@@ -63,13 +63,6 @@ active proctype Environment() {
     od
 }
 
-ltl S1 { [] (count <= N) }
-ltl S2 { [] (count >= 0) }
-ltl S3 { [] (!err) }
-ltl L1 { [] (enq -> <> (deq || reject)) }
-ltl L2 { [] (count > 0 -> <> (count == 0)) }
-
-
 // G (count <= N)
 ltl S1 { [] (count <= N) }
 
