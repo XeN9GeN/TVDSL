@@ -15,14 +15,14 @@ public class Optimizer {
 
     public Optimizer(){}
 
-    public void optimize(List<Block> blockList, boolean foldConst, boolean simpleAlg, boolean DCE){
+    public void optimize(List<Block> blockList, boolean foldConst, boolean simpleAlg, boolean DCE, Set<String> liveOutVars){
         for(Block block : blockList){
             boolean changed = true;
 
-            Set<String> liveOutVars = new HashSet<>(LDCE.getLiveOutVars());
+            Set<String> blockLiveOut = new HashSet<>(liveOutVars);
             for (Block succ : block.blocks_to) {
                 for (String inst : succ.label_body) {
-                    LDCE.extractVars(inst, liveOutVars);
+                    LDCE.extractVars(inst, blockLiveOut);
                 }
             }
 
@@ -35,7 +35,7 @@ public class Optimizer {
                     if(applySimAlg.test(block)) changed = true;
                 }
                 if(DCE){
-                    if (applyDCE.test(block,liveOutVars)) changed = true;
+                    if (applyDCE.test(block,blockLiveOut)) changed = true;
                 }
             }
         }

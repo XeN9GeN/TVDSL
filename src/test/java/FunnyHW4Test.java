@@ -16,6 +16,7 @@ import HW4.GreedyGraph;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -140,7 +141,8 @@ public class FunnyHW4Test {
 
         LDCE.setLiveOutVars(java.util.Set.of("r"));
         Optimizer optimizer = new Optimizer();
-        optimizer.optimize(blocks, true, true, true);
+        Set<String> returns = ast.functions.get(0).returns.stream().map(p->p.name).collect(Collectors.toSet());
+        optimizer.optimize(blocks, true, true, true, returns);
 
         List<String> optimizedCode = new java.util.ArrayList<>();
         for (Block block : blocks) {
@@ -171,6 +173,93 @@ public class FunnyHW4Test {
                 "Условный переход должен остаться");
         assertTrue(optimizedCode.stream().anyMatch(s -> s.contains("r =")),
                 "Возвращаемая переменная r должна остаться в обоих ветках");
+    }
+
+    @Test
+    public void testAdvancedOptimizations() {
+        String source = """
+            function main(a: int, n: int) returns r: int {
+                dead1 = 10 / 2 - 5;
+                x = 2 + 3;
+                r = x;
+                i = 0;
+                r = 0;
+                while (i < n) {
+                    dead2 = x * 0 + 100;
+                    y = x * 1;
+                    if (y > 0) {
+                        r = r + y;
+                    } else {
+                        r = r - 1;
+                    }
+                    i = i + 1;
+                }
+            }
+            """;
+
+        FunnyLexer lexer = new FunnyLexer(automaton);
+        ParserFunny parser = new ParserFunny(lexer.tokenize(source));
+        ProgramNode ast = parser.parseProgram();
+
+        CheckAnalyzer analyzer = new CheckAnalyzer();
+        analyzer.analyze(ast);
+        assertTrue(analyzer.getErrors().isEmpty());
+
+        // 1. Генерируем IR
+        IRGeneration irGen = new IRGeneration(ast);
+        irGen.generateStmt(ast.functions.get(0).body);
+        List<String> irCode = irGen.getGeneratedCode();
+
+        System.out.println("=== СЛОЖНЫЙ IR ДО ОПТИМИЗАЦИЙ ===");
+        for (String s : irCode) System.out.println(s);
+        System.out.println();
+
+        // 2. Строим CFG
+        List<Block> blocks = CFGBlocks.buildCFG(irCode);
+
+        // 3. Настраиваем оптимизации
+        Set<String> returns = ast.functions.get(0).returns.stream().map(p -> p.name).collect(Collectors.toSet());
+        Optimizer optimizer = new Optimizer();
+        optimizer.optimize(blocks, true, true, true, returns);
+
+        // Собираем все инструкции
+        List<String> optimizedCode = new java.util.ArrayList<>();
+        for (Block block : blocks) {
+            optimizedCode.addAll(block.label_body);
+        }
+
+        System.out.println("=== СЛОЖНЫЙ IR ПОСЛЕ ОПТИМИЗАЦИЙ ===");
+        for (String s : optimizedCode) System.out.println(s);
+
+        // --- ПРОВЕРКИ ---
+
+        // 1. Constant Folding: 2+3 -> 5, 10/2-5 -> 0
+        assertTrue(optimizedCode.stream().anyMatch(s -> s.contains("= 5")),
+                "Должна быть константа 5 (x = 2+3)");
+        assertTrue(optimizedCode.stream().anyMatch(s -> s.contains("= 0")),
+                "Должна быть константа 0 (dead1 = 10/2-5)");
+
+        // 2. DCE: dead1 и dead2 удалены
+        assertFalse(optimizedCode.stream().anyMatch(s -> s.contains("dead1")),
+                "dead1 должна быть удалена");
+        assertFalse(optimizedCode.stream().anyMatch(s -> s.contains("dead2")),
+                "dead2 должна быть удалена");
+
+        // 3. Algebraic Simplification: x * 1 -> x, x * 0 + 100 удалено
+        assertFalse(optimizedCode.stream().anyMatch(s -> s.contains("* 1")),
+                "Умножение на 1 должно исчезнуть");
+        assertFalse(optimizedCode.stream().anyMatch(s -> s.contains("* 0")),
+                "Умножение на 0 должно исчезнуть");
+
+        // 4. Проверка, что r (возвращаемая) осталась в обеих ветках
+        long rCount = optimizedCode.stream().filter(s -> s.startsWith("r =")).count();
+        assertTrue(rCount >= 2, "r должна остаться в обеих ветках (найдено " + rCount + " вхождений)");
+
+        // 5. Проверка, что while не сломался (метки и goto на месте)
+        assertTrue(optimizedCode.stream().anyMatch(s -> s.startsWith("if ")),
+                "Условный переход while/if должен остаться");
+        assertTrue(optimizedCode.stream().anyMatch(s -> s.startsWith("goto ")),
+                "Безусловный переход должен остаться");
     }
 
     @Test
