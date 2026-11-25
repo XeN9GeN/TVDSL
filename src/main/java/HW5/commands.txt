@@ -1,6 +1,7 @@
-//Для рабочей версии:
+#Для рабочей версии:
 
 cd src/main/java/HW5/queue_right
+mkdir -p results
 spin -a queue.pml
 gcc -O2 -o pan pan.c
 
@@ -19,12 +20,3 @@ rm -f queue.pml.trail
 
 rm -f queue.pml.trail
 ./pan -a -f -N L2 > results/L2.txt 2>&1
-
-
-# Воспроизведение trail, если он создан проверкой
-if [ -f queue.pml.trail ]; then
-cp queue.pml.trail traces/L2.trail
-spin -t -p queue.pml > traces/L2.txt 2>&1
-else
-echo "Контрпример L2 не найден: queue.pml.trail отсутствует"
-fi
