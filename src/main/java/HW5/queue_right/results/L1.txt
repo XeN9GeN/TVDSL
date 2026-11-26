@@ -10,23 +10,24 @@ Full statespace search for:
 	invalid end states	- (disabled by never claim)
 
 State-vector 28 byte, depth reached 39, errors: 0
-       90 states, stored (140 visited)
-       55 states, matched
-      195 transitions (= visited+matched)
-      113 atomic steps
+       89 states, stored (139 visited)
+      105 states, matched
+      244 transitions (= visited+matched)
+      153 atomic steps
 hash conflicts:         0 (resolved)
 
 Stats on memory usage (in Megabytes):
     0.005	equivalent memory usage for states (stored*(State-vector + overhead))
-    0.278	actual memory usage for states
+    0.277	actual memory usage for states
   128.000	memory used for hash table (-w24)
     0.534	memory used for DFS stack (-m10000)
   128.730	total actual memory usage
 
 
 unreached in proctype Environment
-	queue.pml:117, state 85, "-end-"
-	(1 of 85 states)
+	queue.pml:93, state 59, "(1)"
+	queue.pml:126, state 91, "-end-"
+	(2 of 91 states)
 unreached in claim L1
 	_spin_nvr.tmp:42, state 20, "-end-"
 	(1 of 20 states)

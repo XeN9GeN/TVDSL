@@ -1,11 +1,12 @@
-#Для рабочей версии:
+# HW5 — команды Spin/Promela
+# Каждый LTL-предикат проверяется отдельным запуском pan.
 
+# Исправная модель
 cd src/main/java/HW5/queue_right
-mkdir -p results
 spin -a queue.pml
 gcc -O2 -o pan pan.c
 
-
+mkdir -p results
 rm -f queue.pml.trail
 ./pan -a -f -N S1 > results/S1.txt 2>&1
 
@@ -22,17 +23,21 @@ rm -f queue.pml.trail
 ./pan -a -f -N L2 > results/L2.txt 2>&1
 
 
-
-#Для багованной:
-cd src/main/java/HW5/queue_buggy
-mkdir -p results traces
+cd ../queue_buggy
 spin -a queue.pml
 gcc -O2 -o pan pan.c
+mkdir -p results traces
 
-./pan -a -f -N S1
+rm -f queue.pml.trail
 ./pan -a -f -N S1 > results/S1.txt 2>&1
-cp queue.pml.trail traces/S1.trail
+test -f queue.pml.trail && cp queue.pml.trail traces/S1.trail
 
-./pan -a -f -N S3
+rm -f queue.pml.trail
 ./pan -a -f -N S3 > results/S3.txt 2>&1
-cp queue.pml.trail traces/S3.trail
+test -f queue.pml.trail && cp queue.pml.trail traces/S3.trail
+
+cp traces/S1.trail queue.pml.trail
+spin -t -p queue.pml
+
+cp traces/S3.trail queue.pml.trail
+spin -t -p queue.pml
