@@ -1,0 +1,34 @@
+pan: ltl formula L2
+
+(Spin Version 6.5.2 -- 6 December 2019)
+	+ Partial Order Reduction
+
+Full statespace search for:
+	never claim         	+ (L2)
+	assertion violations	+ (if within scope of claim)
+	acceptance   cycles 	+ (fairness enabled)
+	invalid end states	- (disabled by never claim)
+
+State-vector 28 byte, depth reached 39, errors: 0
+       74 states, stored (108 visited)
+       81 states, matched
+      189 transitions (= visited+matched)
+      117 atomic steps
+hash conflicts:         0 (resolved)
+
+Stats on memory usage (in Megabytes):
+    0.004	equivalent memory usage for states (stored*(State-vector + overhead))
+    0.278	actual memory usage for states
+  128.000	memory used for hash table (-w24)
+    0.534	memory used for DFS stack (-m10000)
+  128.730	total actual memory usage
+
+
+unreached in proctype Environment
+	queue.pml:117, state 85, "-end-"
+	(1 of 85 states)
+unreached in claim L2
+	_spin_nvr.tmp:53, state 13, "-end-"
+	(1 of 13 states)
+
+pan: elapsed time 0 seconds

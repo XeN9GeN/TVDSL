@@ -1,0 +1,38 @@
+#Для рабочей версии:
+
+cd src/main/java/HW5/queue_right
+mkdir -p results
+spin -a queue.pml
+gcc -O2 -o pan pan.c
+
+
+rm -f queue.pml.trail
+./pan -a -f -N S1 > results/S1.txt 2>&1
+
+rm -f queue.pml.trail
+./pan -a -f -N S2 > results/S2.txt 2>&1
+
+rm -f queue.pml.trail
+./pan -a -f -N S3 > results/S3.txt 2>&1
+
+rm -f queue.pml.trail
+./pan -a -f -N L1 > results/L1.txt 2>&1
+
+rm -f queue.pml.trail
+./pan -a -f -N L2 > results/L2.txt 2>&1
+
+
+
+#Для багованной:
+cd src/main/java/HW5/queue_buggy
+mkdir -p results traces
+spin -a queue.pml
+gcc -O2 -o pan pan.c
+
+./pan -a -f -N S1
+./pan -a -f -N S1 > results/S1.txt 2>&1
+cp queue.pml.trail traces/S1.trail
+
+./pan -a -f -N S3
+./pan -a -f -N S3 > results/S3.txt 2>&1
+cp queue.pml.trail traces/S3.trail
