@@ -20,7 +20,7 @@ public class CFGBlocks {
         for (int i=0; i<IRcode.size(); i++){
             String instance = IRcode.get(i);
 
-            if (instance.startsWith("L ")){
+            if (instance.startsWith("L ") || instance.startsWith("Function ")){
                 is_leader[i] = true;
             }
 
@@ -62,6 +62,22 @@ public class CFGBlocks {
                 if(target_block!=null){
                     block.addBlockTo(target_block);
                 }
+            }
+
+            if (last_instance.startsWith("Return")) {
+                continue;
+            }
+
+            else if (last_instance.startsWith("goto ")) {
+                String target_label = last_instance.substring(5).trim();
+                Block target_block = labelToBlock.get(target_label);
+
+                if (target_block == null) {
+                    throw new IllegalStateException(
+                            "Unknown label: " + target_label);
+                }
+
+                block.addBlockTo(target_block);
             }
 
             else if(last_instance.startsWith("if ")){//if a>b goto L?

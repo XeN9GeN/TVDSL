@@ -6,24 +6,21 @@ import java.util.*;
 public class GreedyGraph {
     private Map<String, Set<String>> graph = new HashMap<>();
 
-    public void buildGraph(Map<String, LifeInterval> lifeIntervalMap){
+    public void buildGraph(List<Set<String>> liveSets) {
         graph.clear();
 
-        for(String var: lifeIntervalMap.keySet()){
-            graph.put(var, new HashSet<>());
-        }
+        for (Set<String> vars : liveSets) {
+            for (String var : vars) {
+                graph.putIfAbsent(var, new HashSet<>());
+            }
 
-        List<String> vars = new ArrayList<>(lifeIntervalMap.keySet());
+            List<String> list = new ArrayList<>(vars);
 
-        for(int i=0;i<vars.size();i++){
-            for(int j =i+1; j<vars.size();j++){
-                String v1 = vars.get(i);
-                String v2 = vars.get(j);
+            for (int i = 0; i < list.size(); i++) {
+                for (int j = i + 1; j < list.size(); j++) {
+                    String v1 = list.get(i);
+                    String v2 = list.get(j);
 
-                LifeInterval l1 = lifeIntervalMap.get(v1);
-                LifeInterval l2 = lifeIntervalMap.get(v2);
-
-                if(l1.getEnd() >= l2.getStart() && l1.getStart() <= l2.getEnd()){
                     graph.get(v1).add(v2);
                     graph.get(v2).add(v1);
                 }

@@ -1,5 +1,6 @@
 === 1) БЛОКИ ===
 B0:
+   Function main() returns res:
    x = 0
    if x > 10 goto L1
 
@@ -18,6 +19,7 @@ B3:
 B4:
    L3:
    res = y
+   Return res
 
 === 2) ПЕРЕХОДЫ ===
 B0:

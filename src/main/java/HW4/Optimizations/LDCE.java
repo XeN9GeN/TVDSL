@@ -13,10 +13,6 @@ public class LDCE {
         liveOutVars = vars;
     }
 
-    public static Set<String> getLiveOutVars() {
-        return liveOutVars;
-    }
-
     public static boolean applyDCE(Block block, Set<String> liveOutVars) {
         boolean changed = false;
         java.util.Set<String> usedVars = new java.util.HashSet<>(liveOutVars);
@@ -59,6 +55,30 @@ public class LDCE {
         }
         return changed;
     }
+
+
+    public static void updateLiveness(String inst, Set<String> live) {
+        if (inst.contains("=") && !inst.startsWith("if ")) {
+            String[] parts = inst.split("=", 2);
+
+            String left = parts[0].trim();
+            String right = parts[1].trim();
+
+            if (!left.contains("[")) {
+                live.remove(left);
+            }
+
+            extractVars(right, live);
+
+            if (left.contains("[")) {
+                extractVars(left, live);
+            }
+        }
+        else {
+            extractVars(inst, live);
+        }
+    }
+
 
     static void extractVars(String inst, java.util.Set<String> usedVars) {
         String[] tokens = inst.replaceAll("[^a-zA-Z0-9_$]", " ").split("\\s+");

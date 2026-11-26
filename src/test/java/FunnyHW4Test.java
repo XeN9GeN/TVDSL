@@ -91,7 +91,7 @@ public class FunnyHW4Test {
         ProgramNode ast = parser.parseProgram();
 
         IRGeneration irGen = new IRGeneration(ast);
-        irGen.generateStmt(ast.functions.get(0).body);
+        irGen.generateProgram(ast);
 
         List<String> irCode = irGen.getGeneratedCode();
         List<Block> blocks = CFGBlocks.buildCFG(irCode);
@@ -302,7 +302,7 @@ public class FunnyHW4Test {
 
         // 4. Строим граф конфликтов (GreedyGraph)
         GreedyGraph graph = new GreedyGraph();
-        graph.buildGraph(intervals);
+        graph.buildGraph((List<Set<String>>) intervals);
 
         System.out.println("=== ГРАФ КОНФЛИКТОВ ===");
         graph.getGraph().forEach((v, edges) -> {
@@ -337,4 +337,6 @@ public class FunnyHW4Test {
         // Проверяем, что количество регистров адекватно (в данном примере должно быть больше 0 и меньше 10)
         assertTrue(usedRegisters > 0 && usedRegisters < 10, "Количество регистров должно быть разумным");
     }
+
+
 }

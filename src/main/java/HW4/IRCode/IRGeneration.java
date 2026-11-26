@@ -176,21 +176,61 @@ public class IRGeneration {
             }
 
             case AssertNode assertNode -> {
-                generateExprString((ExprNode) assertNode.predicate);
+                basedInstructions.addToCode("assert " + generatePredicateString(assertNode.predicate));
             }
+
             case AssumeNode assumeNode -> {
-                generateExprString((ExprNode) assumeNode.predicate);
+                basedInstructions.addToCode("assume " + generatePredicateString(assumeNode.predicate));
             }
 
             default -> throw new IllegalStateException("Unexpected value: " + stmtNode);
         }
     }
 
+    public String generatePredicateString(PredNode node) {
+        switch (node) {
+            case ComparisonNode comparisonNode -> {
+                String left = generateExprString(comparisonNode.left);
+                String right = generateExprString(comparisonNode.right);
+
+                return left + " " + comparisonNode.op + " " + right;
+            }
+
+            case LogicalOpNode logicalOpNode -> {
+                return "(" + generatePredicateString(logicalOpNode.left)
+                        + " " + logicalOpNode.op + " "
+                        + generatePredicateString(logicalOpNode.right) + ")";
+            }
+
+            case NotNode notNode -> {
+                return "not (" + generatePredicateString(notNode.expr) + ")";
+            }
+
+            case BoolNode boolNode -> {
+                return Boolean.toString(boolNode.value);
+            }
+
+            default -> throw new IllegalStateException(
+                    "Unexpected predicate: " + node);
+        }
+    }
+
     public void generateProgram(ProgramNode program) {
         for (FunctionNode func : program.functions) {
-            basedInstructions.addToCode("Function " + func.name + ":");
+            String params = func.params.stream()
+                    .map(p -> p.name)
+                    .collect(java.util.stream.Collectors.joining(", "));
+
+            String returns = func.returns.stream()
+                    .map(p -> p.name)
+                    .collect(java.util.stream.Collectors.joining(", "));
+
+            basedInstructions.addToCode(
+                    "Function " + func.name + "(" + params + ") returns " + returns + ":");
+
             generateStmt(func.body);
-            basedInstructions.addToCode("Return");
+
+            basedInstructions.addToCode("Return " + returns);
         }
     }
 }

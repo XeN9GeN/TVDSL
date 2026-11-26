@@ -22,32 +22,28 @@ public class LifeInterval {
     public int getStart() { return start_life_ind; }
     public int getEnd() { return end_life_ind; }
 
-    public Map<String, LifeInterval> countLifenessTime(Block block, Set<String> liveInVars){
-        Map<String, LifeInterval> lifeIntervalMap = new HashMap<>();//имя переменной - её интервал жизни
+    public Map<String, LifeInterval> countLifenessTime(
+            Block block, Set<String> liveInVars) {
+
+        Map<String, LifeInterval> lifeIntervalMap = new HashMap<>();
 
         for (String var : liveInVars) {
-            lifeIntervalMap.put(var, new LifeInterval(var, 0, 0));
+            lifeIntervalMap.put(var,
+                    new LifeInterval(var, 0, block.label_body.size()));
         }
 
-        for(int i=0; i<block.label_body.size();i++){
+        for (int i = 0; i < block.label_body.size(); i++) {
             String instance = block.label_body.get(i).trim();
-            if (instance.isEmpty() || instance.endsWith(":")) continue;
 
-            if (instance.startsWith("if ")){
-                Set<String> vars = extractVars(instance);
-                for(String var: vars){
-                    updateInterval(lifeIntervalMap, var, i);
-                }
+            if (instance.isEmpty() || instance.startsWith("L ")) {
+                continue;
             }
 
-            else if(instance.contains("=")) {
+            if (instance.contains("=") && !instance.startsWith("if ")) {
                 String[] parts = instance.split("=", 2);
+
                 String left = parts[0].trim();
                 String right = parts[1].trim();
-
-                for (String var : extractVars(right)) {
-                    updateInterval(lifeIntervalMap, var, i);
-                }
 
                 if (left.contains("[")) {
                     for (String var : extractVars(left)) {
@@ -55,16 +51,21 @@ public class LifeInterval {
                     }
                 }
                 else {
-                    updateInterval(lifeIntervalMap, left, i);
+                    lifeIntervalMap.putIfAbsent(left,
+                            new LifeInterval(left, i, i));
+                }
+
+                for (String var : extractVars(right)) {
+                    updateInterval(lifeIntervalMap, var, i);
                 }
             }
-
             else {
                 for (String var : extractVars(instance)) {
                     updateInterval(lifeIntervalMap, var, i);
                 }
             }
         }
+
         return lifeIntervalMap;
     }
 

@@ -1,5 +1,4 @@
-$t5 = 5
-x = $t5
+x = 5
 if x > 0 goto L1
 goto L2
 L L1
