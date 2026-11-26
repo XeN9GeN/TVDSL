@@ -28,5 +28,5 @@ Stats on memory usage (in Megabytes):
 
 
 
-pan: elapsed time 0.03 seconds
-pan: rate 266.66667 states/second
+pan: elapsed time 0.04 seconds
+pan: rate       200 states/second

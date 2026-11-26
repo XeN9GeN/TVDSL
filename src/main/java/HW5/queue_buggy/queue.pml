@@ -144,8 +144,8 @@ ltl S3 { [] (!err) }
 
 ltl L1 {
     [] (
-        (enq1 -> <> deq1) &&
-        (enq2 -> <> deq2)
+        (pending1 -> <> (!pending1)) &&
+        (pending2 -> <> (!pending2))
     )
 }
 
