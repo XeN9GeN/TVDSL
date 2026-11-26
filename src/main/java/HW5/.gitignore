@@ -1,0 +1,20 @@
+# Spin-generated verifier files
+queue_right/pan
+queue_right/pan.c
+queue_right/pan.h
+queue_right/pan.b
+queue_right/pan.m
+queue_right/pan.p
+queue_right/pan.t
+queue_right/_spin_nvr.tmp
+queue_right/*.trail
+
+queue_buggy/pan
+queue_buggy/pan.c
+queue_buggy/pan.h
+queue_buggy/pan.b
+queue_buggy/pan.m
+queue_buggy/pan.p
+queue_buggy/pan.t
+queue_buggy/_spin_nvr.tmp
+queue_buggy/*.trail
