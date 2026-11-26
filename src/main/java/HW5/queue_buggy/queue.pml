@@ -3,6 +3,7 @@
 
 int count = 0;
 bit err = 0;
+bit overflow = 0;
 
 bit enq = 0;
 bit deq = 0;
@@ -129,14 +130,14 @@ active proctype Buggy() {
     do
     :: (count == N && !buggy_done) ->
         atomic {
+            overflow = 1;
             err = 1;
-            count = count + 1;
             buggy_done = 1
         }
     od
 }
 
-ltl S1 { [] (count <= N) }
+ltl S1 { [] (!overflow) }
 
 ltl S2 { [] (count >= 0) }
 

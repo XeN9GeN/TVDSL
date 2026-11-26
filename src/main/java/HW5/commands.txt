@@ -36,6 +36,18 @@ rm -f queue.pml.trail
 ./pan -a -f -N S3 > results/S3.txt 2>&1
 test -f queue.pml.trail && cp queue.pml.trail traces/S3.trail
 
+rm -f queue.pml.trail
+./pan -a -f -N S2 > results/S2.txt 2>&1
+test -f queue.pml.trail && cp queue.pml.trail traces/S2.trail
+
+rm -f queue.pml.trail
+./pan -a -f -N L2 > results/L2.txt 2>&1
+test -f queue.pml.trail && cp queue.pml.trail traces/L2.trail
+
+rm -f queue.pml.trail
+./pan -a -f -N L1 > results/L1.txt 2>&1
+test -f queue.pml.trail && cp queue.pml.trail traces/L1.trail
+
 cp traces/S1.trail queue.pml.trail
 spin -t -p queue.pml
 

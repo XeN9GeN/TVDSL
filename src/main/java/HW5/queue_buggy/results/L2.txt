@@ -1,9 +1,6 @@
 pan: ltl formula L2
-pan:1: assertion violated - invalid array index (at depth 57)
-pan: wrote queue.pml.trail
 
 (Spin Version 6.5.2 -- 6 December 2019)
-Warning: Search not completed
 	+ Partial Order Reduction
 
 Full statespace search for:
@@ -12,11 +9,11 @@ Full statespace search for:
 	acceptance   cycles 	+ (fairness enabled)
 	invalid end states	- (disabled by never claim)
 
-State-vector 36 byte, depth reached 91, errors: 1
-      206 states, stored (410 visited)
-      291 states, matched
-      701 transitions (= visited+matched)
-      480 atomic steps
+State-vector 36 byte, depth reached 81, errors: 0
+      218 states, stored (435 visited)
+      460 states, matched
+      895 transitions (= visited+matched)
+      463 atomic steps
 hash conflicts:         0 (resolved)
 
 Stats on memory usage (in Megabytes):
@@ -27,6 +24,15 @@ Stats on memory usage (in Megabytes):
   128.730	total actual memory usage
 
 
+unreached in proctype Environment
+	queue.pml:94, state 59, "(1)"
+	queue.pml:127, state 91, "-end-"
+	(2 of 91 states)
+unreached in proctype Buggy
+	queue.pml:138, state 9, "-end-"
+	(1 of 9 states)
+unreached in claim L2
+	_spin_nvr.tmp:53, state 13, "-end-"
+	(1 of 13 states)
 
-pan: elapsed time 0.1 seconds
-pan: rate      4100 states/second
+pan: elapsed time 0 seconds

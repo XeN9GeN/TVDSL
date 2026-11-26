@@ -1,5 +1,5 @@
 pan: ltl formula S1
-pan:1: assertion violated  !( !((count<=2))) (at depth 19)
+pan:1: assertion violated  !( !( !(overflow))) (at depth 19)
 pan: wrote queue.pml.trail
 
 (Spin Version 6.5.2 -- 6 December 2019)
