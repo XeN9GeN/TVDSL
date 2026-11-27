@@ -3,6 +3,7 @@ package AST;
 
 import AST.Nodes.*;
 import AST.Nodes.ExprNodes.*;
+import AST.Nodes.PredNodes.BoolNode;
 import AST.Nodes.PredNodes.ComparisonNode;
 import AST.Nodes.PredNodes.LogicalOpNode;
 import AST.Nodes.PredNodes.NotNode;
@@ -38,7 +39,15 @@ public class ASTPrinter {
     private static void printStatement(StmtNode stmt, int indent) {
         printIndent(indent);
 
-        if (stmt instanceof AssignNode) {
+        if (stmt instanceof ArrayAssignNode) {
+            ArrayAssignNode a = (ArrayAssignNode) stmt;
+            return "{\n" +
+                    padIn + "\"type\": \"ArrayAssign\",\n" +
+                    padIn + "\"arrayName\": \"" + escapeJson(a.arrayName) + "\",\n" +
+                    padIn + "\"index\": " + exprToJson(a.index, indent + 1) + ",\n" +
+                    padIn + "\"value\": " + exprToJson(a.value, indent + 1) + "\n" +
+                    padEnd + "}";
+        } else if (stmt instanceof AssignNode) {
             AssignNode a = (AssignNode) stmt;
             System.out.println("Assign: " + a.target);
             printExpr(a.value, indent + 1);
@@ -95,6 +104,13 @@ public class ASTPrinter {
             System.out.println("BinaryOp: " + b.op);
             printExpr(b.l, indent + 1);
             printExpr(b.r, indent + 1);
+        } else if (expr instanceof UnaryOpNode) {
+            UnaryOpNode u = (UnaryOpNode) expr;
+            return "{\n" +
+                    padIn + "\"type\": \"UnaryOp\",\n" +
+                    padIn + "\"op\": \"" + escapeJson(u.op) + "\",\n" +
+                    padIn + "\"expr\": " + exprToJson(u.expr, indent + 1) + "\n" +
+                    padEnd + "}";
         } else if (expr instanceof ArrayAccessNode) {
             ArrayAccessNode a = (ArrayAccessNode) expr;
             System.out.println("ArrayAccess: " + a.arrayName);
@@ -110,7 +126,12 @@ public class ASTPrinter {
     private static void printPredicate(PredNode pred, int indent) {
         if (pred == null) return;
         printIndent(indent);
-        if (pred instanceof ComparisonNode) {
+        if (pred instanceof BoolNode) {
+            return "{\n" +
+                    padIn + "\"type\": \"Bool\",\n" +
+                    padIn + "\"value\": " + ((BoolNode) pred).value + "\n" +
+                    padEnd + "}";
+        } else if (pred instanceof ComparisonNode) {
             ComparisonNode c = (ComparisonNode) pred;
             System.out.println("Comparison: " + c.op);
             printExpr(c.left, indent + 1);
@@ -137,7 +158,7 @@ public class ASTPrinter {
         return sb.toString();
     }
 
-    public static void printToJson(ProgramNode program) {
+    public static String toJson(ProgramNode program) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n  \"functions\": [\n");
         for (int i = 0; i < program.functions.size(); i++) {
@@ -146,14 +167,20 @@ public class ASTPrinter {
             sb.append("\n");
         }
         sb.append("  ]\n}");
+        return sb.toString();
+    }
 
-        String path = "C:/Users/user/IdeaProjects/TVDSL/Funny lang/ast.json";
-        try (java.io.FileWriter fw = new java.io.FileWriter(path)) {
-            fw.write(sb.toString());
+    public static void printToJson(ProgramNode program) {
+        java.nio.file.Path path = java.nio.file.Path.of("output", "ast.json");
+        try {
+            java.nio.file.Files.createDirectories(path.getParent());
+            java.nio.file.Files.writeString(path, toJson(program),
+                    java.nio.charset.StandardCharsets.UTF_8);
         } catch (java.io.IOException e) {
-            e.printStackTrace();
+            throw new java.io.UncheckedIOException("Failed to save AST to " + path, e);
         }
     }
+
     private static String functionToJson(FunctionNode func, int indent) {
         String padIn = getIndent(indent + 1);
         String padEnd = getIndent(indent);
@@ -161,14 +188,32 @@ public class ASTPrinter {
         sb.append("{\n");
         sb.append(padIn).append("\"type\": \"Function\",\n");
         sb.append(padIn).append("\"name\": \"").append(escapeJson(func.name)).append("\",\n");
+        sb.append(padIn).append("\"params\": ").append(paramsToJson(func.params)).append(",\n");
+        sb.append(padIn).append("\"returns\": ").append(paramsToJson(func.returns)).append(",\n");
         sb.append(padIn).append("\"requires\": ");
         if (func.requires == null) sb.append("null");
         else sb.append(predicateToJson(func.requires, indent + 1));
+        sb.append(",\n");
+        sb.append(padIn).append("\"ensures\": ");
+        if (func.ensures == null) sb.append("null");
+        else sb.append(predicateToJson(func.ensures, indent + 1));
         sb.append(",\n");
         sb.append(padIn).append("\"body\": ").append(blockToJson(func.body, indent + 1)).append("\n");
         sb.append(padEnd).append("}");
         return sb.toString();
     }
+
+    private static String paramsToJson(java.util.List<ParamNode> params) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < params.size(); i++) {
+            ParamNode param = params.get(i);
+            if (i > 0) sb.append(", ");
+            sb.append("{\"name\": \"").append(escapeJson(param.name))
+                    .append("\", \"type\": \"").append(escapeJson(param.type)).append("\"}");
+        }
+        return sb.append("]").toString();
+    }
+
     private static String blockToJson(BlockNode block, int indent) {
         String padIn = getIndent(indent + 1);
         String padEnd = getIndent(indent);
