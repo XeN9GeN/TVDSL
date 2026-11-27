@@ -137,6 +137,7 @@ public class LDCE {
 
         while (matcher.find()) {
             String token = matcher.group();
+            if (token.matches("^L\\d+$")) continue;
 
             if (token.equals("L") || token.equals("goto") ||
                     token.equals("if") || token.equals("call") ||

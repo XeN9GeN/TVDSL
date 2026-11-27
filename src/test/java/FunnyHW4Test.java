@@ -496,4 +496,26 @@ public class FunnyHW4Test {
         assertTrue(optimizedCode.contains("Return r"),
                 "Инструкция Return должна сохраниться");
     }
+
+    @Test
+    public void testLifeIntervalIgnoresFunctionHeader() {
+        Block block = new Block("B0");
+
+        block.addLBody("Function main(a) returns r:");
+        block.addLBody("x = a + 1");
+        block.addLBody("r = x");
+        block.addLBody("Return r");
+
+        LifeInterval lifeInterval = new LifeInterval(null, 0, 0);
+        Map<String, LifeInterval> intervals =
+                lifeInterval.countLifenessTime(block, Set.of());
+
+        assertTrue(intervals.containsKey("a"));
+        assertTrue(intervals.containsKey("x"));
+        assertTrue(intervals.containsKey("r"));
+
+        assertFalse(intervals.containsKey("main"));
+        assertFalse(intervals.containsKey("returns"));
+        assertFalse(intervals.containsKey("Return"));
+    }
 }

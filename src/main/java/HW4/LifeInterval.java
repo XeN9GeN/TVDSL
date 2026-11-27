@@ -35,7 +35,7 @@ public class LifeInterval {
         for (int i = 0; i < block.label_body.size(); i++) {
             String instance = block.label_body.get(i).trim();
 
-            if (instance.isEmpty() || instance.startsWith("L ")) {
+            if (instance.isEmpty() || instance.startsWith("L ") || instance.startsWith("Function ")) {
                 continue;
             }
 
@@ -85,8 +85,11 @@ public class LifeInterval {
         String cleaned = expr.replaceAll("\"[^\"]*\"", " ");
 
         String[] tokens = cleaned.replaceAll("[^a-zA-Z0-9_.$]", " ").split("\\s+");
-        Set<String> keywords = Set.of("if", "else", "goto", "call", "return", "param", "Function", "assert", "assume", "true", "false", "null");
-
+        Set<String> keywords = Set.of(
+                "if", "else", "goto", "call", "return", "Return",
+                "param", "Function", "returns", "assert", "assume",
+                "true", "false", "null"
+        );
         boolean skipNext = false;
 
         for (String token : tokens) {
