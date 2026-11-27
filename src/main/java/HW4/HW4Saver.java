@@ -8,13 +8,12 @@ import java.nio.file.Path;
 import java.util.List;
 
 public class HW4Saver {
-    private static final String BASE_PATH = "C:\\Users\\user\\IdeaProjects\\TVDSL\\Funny lang";
+    private static final Path OUTPUT_DIRECTORY = Path.of("output");
 
     public static void saveIR(List<String> irCode, String fileName) {
-        Path dir = Path.of(BASE_PATH);
-        Path file = dir.resolve(fileName);
+        Path file = OUTPUT_DIRECTORY.resolve(fileName);
         try {
-            Files.createDirectories(dir);
+            Files.createDirectories(OUTPUT_DIRECTORY);
             Files.write(file, irCode);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save IR to " + file, e);
@@ -22,8 +21,7 @@ public class HW4Saver {
     }
 
     public static void saveCFG(List<Block> blocks, String fileName) {
-        Path dir = Path.of(BASE_PATH);
-        Path file = dir.resolve(fileName);
+        Path file = OUTPUT_DIRECTORY.resolve(fileName);
         StringBuilder sb = new StringBuilder();
 
         sb.append("=== 1) БЛОКИ ===\n");
@@ -48,32 +46,33 @@ public class HW4Saver {
 
             if (!block.blocks_to.isEmpty()) {
                 sb.append("Переход в ->: ");
-                for (Block succ : block.blocks_to) {
-                    int succIdx = blocks.indexOf(succ);
-                    String succLabel = getBlockLabel(succ);
-                    if (succLabel != null) {
-                        sb.append(succLabel).append("(B").append(succIdx).append(") ");
+                for (Block successor : block.blocks_to) {
+                    int successorIndex = blocks.indexOf(successor);
+                    String successorLabel = getBlockLabel(successor);
+                    if (successorLabel != null) {
+                        sb.append(successorLabel).append("(B").append(successorIndex).append(") ");
                     } else {
-                        sb.append("B").append(succIdx).append(" ");
+                        sb.append("B").append(successorIndex).append(" ");
                     }
                 }
                 sb.append("\n");
             }
 
-            for (Block pred : block.blocks_into) {
-                int predIdx = blocks.indexOf(pred);
-                String predLabel = getBlockLabel(pred);
-                if (predLabel != null) {
-                    sb.append("-> Вход из: ").append(predLabel).append("(B").append(predIdx).append(")\n");
+            for (Block predecessor : block.blocks_into) {
+                int predecessorIndex = blocks.indexOf(predecessor);
+                String predecessorLabel = getBlockLabel(predecessor);
+                if (predecessorLabel != null) {
+                    sb.append("-> Вход из: ").append(predecessorLabel)
+                            .append("(B").append(predecessorIndex).append(")\n");
                 } else {
-                    sb.append("-> Вход из: B").append(predIdx).append("\n");
+                    sb.append("-> Вход из: B").append(predecessorIndex).append("\n");
                 }
             }
             sb.append("\n");
         }
 
         try {
-            Files.createDirectories(dir);
+            Files.createDirectories(OUTPUT_DIRECTORY);
             Files.writeString(file, sb.toString());
         } catch (IOException e) {
             throw new RuntimeException("Failed to save CFG to " + file, e);
@@ -81,9 +80,9 @@ public class HW4Saver {
     }
 
     private static String getBlockLabel(Block block) {
-        for (String inst : block.label_body) {
-            if (inst.startsWith("L ")) {
-                return inst.substring(2).trim();
+        for (String instruction : block.label_body) {
+            if (instruction.startsWith("L ")) {
+                return instruction.substring(2).trim();
             }
         }
         return null;
