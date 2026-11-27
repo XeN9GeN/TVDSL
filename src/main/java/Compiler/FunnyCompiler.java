@@ -18,7 +18,6 @@ import lexer.Tokens.Token;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,10 +76,9 @@ public final class FunnyCompiler {
         List<Block> cfg = CFGBlocks.buildCFG(ir);
         List<Block> optimizedCfg = CFGBlocks.buildCFG(ir);
 
-        Set<String> returnVariables = new HashSet<>();
-        ast.functions.forEach(function ->
-                function.returns.forEach(parameter -> returnVariables.add(parameter.name)));
-        new Optimizer().optimize(optimizedCfg, true, true, true, returnVariables);
+        // Return instructions are already recognized as liveness roots by LDCE.
+        // A global set of return names would keep unrelated locals in other functions.
+        new Optimizer().optimize(optimizedCfg, true, true, true, Set.of());
 
         Map<Integer, Map<String, LifeInterval>> intervals = new HashMap<>();
         List<Set<String>> liveSets = new ArrayList<>();
