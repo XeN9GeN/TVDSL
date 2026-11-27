@@ -253,16 +253,17 @@ public class ASTPrinter {
             return "{\n" +
                     padIn + "\"type\": \"While\",\n" +
                     padIn + "\"condition\": " + predicateToJson(w.condition, indent + 1) + ",\n" +
-                    padIn + "\"invariant\": " + (w.invariant == null ? "null" : predicateToJson(w.invariant, indent + 1)) + ",\n" +
-                    padIn + "\"body\": " + (w.body instanceof BlockNode ? blockToJson((BlockNode) w.body, indent + 1) : "null") + "\n" +
+                    padIn + "\"invariant\": " + predicateToJson(w.invariant, indent + 1) + ",\n" +
+                    padIn + "\"body\": " + statementToJson(w.body, indent + 1) + "\n" +
                     padEnd + "}";
         } else if (stmt instanceof IfNode) {
             IfNode i = (IfNode) stmt;
             return "{\n" +
                     padIn + "\"type\": \"If\",\n" +
                     padIn + "\"condition\": " + predicateToJson(i.condition, indent + 1) + ",\n" +
-                    padIn + "\"thenBranch\": " + (i.thenBranch instanceof BlockNode ? blockToJson((BlockNode) i.thenBranch, indent + 1) : "null") + ",\n" +
-                    padIn + "\"elseBranch\": " + (i.elseBranch == null ? "null" : (i.elseBranch instanceof BlockNode ? blockToJson((BlockNode) i.elseBranch, indent + 1) : "null")) + "\n" +
+                    padIn + "\"thenBranch\": " + statementToJson(i.thenBranch, indent + 1) + ",\n" +
+                    padIn + "\"elseBranch\": " + (i.elseBranch == null
+                            ? "null" : statementToJson(i.elseBranch, indent + 1)) + "\n" +
                     padEnd + "}";
         } else if (stmt instanceof AssertNode) {
             return "{\n" +
@@ -281,6 +282,7 @@ public class ASTPrinter {
                     padEnd + "}";
         }
     }
+
     private static String exprToJson(ExprNode expr, int indent) {
         String padIn = getIndent(indent + 1);
         String padEnd = getIndent(indent);
