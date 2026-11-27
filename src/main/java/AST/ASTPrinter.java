@@ -231,7 +231,9 @@ public class ASTPrinter {
     private static String statementToJson(StmtNode stmt, int indent) {
         String padIn = getIndent(indent + 1);
         String padEnd = getIndent(indent);
-        if (stmt instanceof ArrayAssignNode) {
+        if (stmt instanceof BlockNode) {
+            return blockToJson((BlockNode) stmt, indent);
+        } else if (stmt instanceof ArrayAssignNode) {
             ArrayAssignNode a = (ArrayAssignNode) stmt;
             return "{\n" +
                     padIn + "\"type\": \"ArrayAssign\",\n" +
