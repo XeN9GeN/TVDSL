@@ -1,11 +1,8 @@
 package HW4.Optimizations;
 
-
 import HW4.Blocks.Block;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class FoldConst {
@@ -14,48 +11,59 @@ public class FoldConst {
         Map<String, Integer> constants = new HashMap<>();
 
         for(int i=0; i<block.label_body.size();i++){
-            String instance = block.label_body.get(i);
+            String instance = block.label_body.get(i).trim();
+            String[] parts = instance.split("\\s+");
 
-            String[] parts = instance.split(" ");
-            if (parts.length == 3 && parts[1].equals("=")) {
+            if(parts.length == 3 && parts[1].equals("=")){
                 String dest = parts[0];
                 String value = parts[2];
 
-                if (isInteger(value)) {
+                if(dest.contains("[")){
+                    continue;
+                }
+
+                if(isInteger(value)){
                     constants.put(dest, Integer.parseInt(value));
                 }
-                else if (constants.containsKey(value)) {
-                    constants.put(dest, constants.get(value));
-                    block.label_body.set(i, dest + " = " + constants.get(value));
+                else if(constants.containsKey(value)){
+                    int constant = constants.get(value);
+                    constants.put(dest, constant);
+                    block.label_body.set(i, dest + " = " + constant);
                     changed = true;
                 }
-                else {
+                else{
                     constants.remove(dest);
                 }
 
                 continue;
             }
 
-            if(parts.length == 5 && parts[1].equals("=")){//res = op1 oper op2
+            if(parts.length == 5 && parts[1].equals("=")){
+                String dest = parts[0];
+
+                if(dest.contains("[")){
+                    continue;
+                }
+
                 String op1 = parts[2];
                 String oper = parts[3];
                 String op2 = parts[4];
 
-                if (constants.containsKey(op1)) {
+                if(constants.containsKey(op1)){
                     op1 = constants.get(op1).toString();
                 }
 
-                if (constants.containsKey(op2)) {
+                if(constants.containsKey(op2)){
                     op2 = constants.get(op2).toString();
                 }
 
-                if(isInteger(op1) && isInteger(op2)) {
+                if(isInteger(op1) && isInteger(op2)){
                     int result = 0;
                     int val1 = Integer.parseInt(op1);
                     int val2 = Integer.parseInt(op2);
                     boolean validOperation = true;
 
-                    switch (oper) {
+                    switch(oper){
                         case "+":
                             result = val1 + val2;
                             break;
@@ -66,9 +74,10 @@ public class FoldConst {
                             result = val1 * val2;
                             break;
                         case "/":
-                            if (val2 == 0) {
+                            if(val2 == 0){
                                 validOperation = false;
-                            } else {
+                            }
+                            else{
                                 result = val1 / val2;
                             }
                             break;
@@ -76,28 +85,45 @@ public class FoldConst {
                             validOperation = false;
                     }
 
-                    if (validOperation) {
-                        block.label_body.set(i, parts[0] + " = " + result);
-                        constants.put(parts[0], result);
+                    if(validOperation){
+                        block.label_body.set(i, dest + " = " + result);
+                        constants.put(dest, result);
                         changed = true;
                     }
+                    else{
+                        constants.remove(dest);
+                    }
+                }
+                else{
+                    constants.remove(dest);
+                }
+
+                continue;
+            }
+
+            if(instance.contains("=") && !instance.startsWith("if ")){
+                String dest = instance.split("=", 2)[0].trim();
+
+                if(!dest.contains("[")){
+                    constants.remove(dest);
                 }
             }
         }
+
         return changed;
     }
 
-
-    public static boolean isInteger(String str) {
-        if (str == null || str.isEmpty()) {
+    public static boolean isInteger(String str){
+        if(str == null || str.isEmpty()){
             return false;
         }
-        try {
+
+        try{
             Integer.parseInt(str);
             return true;
-        } catch (NumberFormatException e) {
+        }
+        catch(NumberFormatException e){
             return false;
         }
     }
-
 }

@@ -1,100 +1,154 @@
+
 package HW4.Optimizations;
 
 import HW4.Blocks.Block;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class LDCE {
-    private static Set<String> liveOutVars = new HashSet<>();
-
-    public static void setLiveOutVars(Set<String> vars) {
-        liveOutVars = vars;
-    }
-
     public static boolean applyDCE(Block block, Set<String> liveOutVars) {
         boolean changed = false;
-        java.util.Set<String> usedVars = new java.util.HashSet<>(liveOutVars);
-
-        for (String inst : block.label_body) {
-            if (inst.contains("=") || inst.contains("if")) {
-                String[] parts = inst.split("=", 2);
-
-                if (parts.length > 1) {
-                    extractVars(parts[1].trim(), usedVars);
-                }
-
-                if(parts[0].contains("[")){
-                    extractVars(parts[0].trim(), usedVars);
-                }
-            }
-            else{
-                extractVars(inst, usedVars);
-            }
-        }
+        Set<String> live = new HashSet<>(liveOutVars);
 
         for (int i = block.label_body.size() - 1; i >= 0; i--) {
             String inst = block.label_body.get(i);
 
-            if (inst.contains("call")) {
+            if (inst.startsWith("if ")) {
+                extractVars(inst, live);
                 continue;
             }
 
-            if (inst.contains("=") && !inst.contains("if")) {
-                String dest = inst.split("=", 2)[0].trim();
-                if (dest.contains("[")) {
+            if (inst.startsWith("assert ") || inst.startsWith("assume ")) {
+                extractVars(inst, live);
+                continue;
+            }
+
+            if (inst.startsWith("Return")) {
+                extractVars(inst, live);
+                continue;
+            }
+
+            if (inst.contains("=")) {
+                String[] parts = inst.split("=", 2);
+                String left = parts[0].trim();
+                String right = parts[1].trim();
+
+                if (left.contains("[")) {
+                    extractVars(left, live);
+                    extractVars(right, live);
                     continue;
                 }
 
-                if (!usedVars.contains(dest)) {
+                if (right.contains("call")) {
+                    live.remove(left);
+                    extractCallVars(right, live);
+                    continue;
+                }
+
+                if (!live.contains(left)) {
                     block.label_body.remove(i);
                     changed = true;
                 }
+                else {
+                    live.remove(left);
+                    extractVars(right, live);
+                }
+
+                continue;
             }
+
+            if (inst.startsWith("goto ") || inst.startsWith("L ") ||
+                    inst.startsWith("Function ")) {
+                continue;
+            }
+
+            extractVars(inst, live);
         }
+
         return changed;
     }
 
 
     public static void updateLiveness(String inst, Set<String> live) {
-        if (inst.contains("=") && !inst.startsWith("if ")) {
+        if (inst.startsWith("if ")) {
+            extractVars(inst, live);
+            return;
+        }
+
+        if (inst.startsWith("assert ") || inst.startsWith("assume ") ||
+                inst.startsWith("Return")) {
+            extractVars(inst, live);
+            return;
+        }
+
+        if (inst.contains("=")) {
             String[] parts = inst.split("=", 2);
 
             String left = parts[0].trim();
             String right = parts[1].trim();
 
-            if (!left.contains("[")) {
-                live.remove(left);
-            }
-
-            extractVars(right, live);
-
             if (left.contains("[")) {
                 extractVars(left, live);
+                extractVars(right, live);
+            }
+            else {
+                live.remove(left);
+
+                if (right.contains("call")) {
+                    extractCallVars(right, live);
+                }
+                else {
+                    extractVars(right, live);
+                }
             }
         }
-        else {
+        else if (!inst.startsWith("goto ") &&
+                !inst.startsWith("L ") &&
+                !inst.startsWith("Function ")) {
             extractVars(inst, live);
         }
     }
 
 
-    static void extractVars(String inst, java.util.Set<String> usedVars) {
-        String[] tokens = inst.replaceAll("[^a-zA-Z0-9_$]", " ").split("\\s+");
-        for (String token : tokens) {
-            if (token.isEmpty()) continue;
+    private static void extractCallVars(String inst, Set<String> usedVars) {
+        int callIndex = inst.indexOf("call");
 
-            if (token.equals("L") || token.equals("goto") || token.equals("if") ||
-                    token.equals("call") || token.equals("Function") || token.equals("assert") || token.equals("assume")) {
+        if (callIndex == -1) {
+            return;
+        }
+
+        int commaIndex = inst.indexOf(",", callIndex);
+
+        if (commaIndex == -1) {
+            return;
+        }
+
+        extractVars(inst.substring(commaIndex + 1), usedVars);
+    }
+
+
+    static void extractVars(String inst, Set<String> usedVars) {
+        Pattern pattern = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
+        Matcher matcher = pattern.matcher(inst);
+
+        while (matcher.find()) {
+            String token = matcher.group();
+
+            if (token.equals("L") || token.equals("goto") ||
+                    token.equals("if") || token.equals("call") ||
+                    token.equals("Function") || token.equals("assert") ||
+                    token.equals("assume") || token.equals("Return") ||
+                    token.equals("true") || token.equals("false") ||
+                    token.equals("and") || token.equals("or") ||
+                    token.equals("not")) {
                 continue;
             }
 
-            try {
-                Integer.parseInt(token);
-            } catch (NumberFormatException e) {
-                usedVars.add(token);
-            }
+            usedVars.add(token);
         }
     }
 }
