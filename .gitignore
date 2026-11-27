@@ -37,3 +37,6 @@ queue_buggy/pan.p
 queue_buggy/pan.t
 queue_buggy/_spin_nvr.tmp
 queue_buggy/*.trail
+
+# Compiler output
+output/
