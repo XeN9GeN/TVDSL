@@ -39,23 +39,19 @@ public class ASTPrinter {
     private static void printStatement(StmtNode stmt, int indent) {
         printIndent(indent);
 
-        if (stmt instanceof ArrayAssignNode) {
-            ArrayAssignNode a = (ArrayAssignNode) stmt;
-            return "{\n" +
-                    padIn + "\"type\": \"ArrayAssign\",\n" +
-                    padIn + "\"arrayName\": \"" + escapeJson(a.arrayName) + "\",\n" +
-                    padIn + "\"index\": " + exprToJson(a.index, indent + 1) + ",\n" +
-                    padIn + "\"value\": " + exprToJson(a.value, indent + 1) + "\n" +
-                    padEnd + "}";
-        } else if (stmt instanceof AssignNode) {
+        if (stmt instanceof AssignNode) {
             AssignNode a = (AssignNode) stmt;
             System.out.println("Assign: " + a.target);
             printExpr(a.value, indent + 1);
-        }
-        else if (stmt instanceof WhileNode) {
+        } else if (stmt instanceof ArrayAssignNode) {
+            ArrayAssignNode a = (ArrayAssignNode) stmt;
+            System.out.println("ArrayAssign: " + a.arrayName);
+            printExpr(a.index, indent + 1);
+            printExpr(a.value, indent + 1);
+        } else if (stmt instanceof WhileNode) {
             WhileNode w = (WhileNode) stmt;
             System.out.println("While:");
-            printPredicate (w.condition, indent + 1); // condition это ExprNode
+            printPredicate(w.condition, indent + 1);
             if (w.invariant != null) {
                 printIndent(indent + 1);
                 System.out.println("Invariant:");
@@ -65,34 +61,40 @@ public class ASTPrinter {
             System.out.println("Body:");
             if (w.body instanceof BlockNode) {
                 printBlock((BlockNode) w.body, indent + 2);
+            } else {
+                printStatement(w.body, indent + 2);
             }
-        }
-        else if (stmt instanceof IfNode) {
+        } else if (stmt instanceof IfNode) {
             IfNode i = (IfNode) stmt;
             System.out.println("If:");
-            printPredicate (i.condition, indent + 1);
+            printPredicate(i.condition, indent + 1);
             printIndent(indent + 1);
             System.out.println("Then:");
-            if (i.thenBranch instanceof BlockNode) printBlock((BlockNode) i.thenBranch, indent + 2);
-
+            if (i.thenBranch instanceof BlockNode) {
+                printBlock((BlockNode) i.thenBranch, indent + 2);
+            } else {
+                printStatement(i.thenBranch, indent + 2);
+            }
             if (i.elseBranch != null) {
                 printIndent(indent + 1);
                 System.out.println("Else:");
-                if (i.elseBranch instanceof BlockNode) printBlock((BlockNode) i.elseBranch, indent + 2);
+                if (i.elseBranch instanceof BlockNode) {
+                    printBlock((BlockNode) i.elseBranch, indent + 2);
+                } else {
+                    printStatement(i.elseBranch, indent + 2);
+                }
             }
-        }
-        else if (stmt instanceof AssertNode) {
+        } else if (stmt instanceof AssertNode) {
             System.out.println("Assert:");
             printPredicate(((AssertNode) stmt).predicate, indent + 1);
-        }
-        else if (stmt instanceof AssumeNode) {
+        } else if (stmt instanceof AssumeNode) {
             System.out.println("Assume:");
             printPredicate(((AssumeNode) stmt).predicate, indent + 1);
-        }
-        else {
+        } else {
             System.out.println("Unknown Statement: " + stmt.getClass().getSimpleName());
         }
     }
+
     private static void printExpr(ExprNode expr, int indent) {
         printIndent(indent);
         if (expr instanceof IntNode) {
@@ -106,11 +108,8 @@ public class ASTPrinter {
             printExpr(b.r, indent + 1);
         } else if (expr instanceof UnaryOpNode) {
             UnaryOpNode u = (UnaryOpNode) expr;
-            return "{\n" +
-                    padIn + "\"type\": \"UnaryOp\",\n" +
-                    padIn + "\"op\": \"" + escapeJson(u.op) + "\",\n" +
-                    padIn + "\"expr\": " + exprToJson(u.expr, indent + 1) + "\n" +
-                    padEnd + "}";
+            System.out.println("UnaryOp: " + u.op);
+            printExpr(u.expr, indent + 1);
         } else if (expr instanceof ArrayAccessNode) {
             ArrayAccessNode a = (ArrayAccessNode) expr;
             System.out.println("ArrayAccess: " + a.arrayName);
@@ -123,14 +122,12 @@ public class ASTPrinter {
             System.out.println("Unknown Expr: " + expr.getClass().getSimpleName());
         }
     }
+
     private static void printPredicate(PredNode pred, int indent) {
         if (pred == null) return;
         printIndent(indent);
         if (pred instanceof BoolNode) {
-            return "{\n" +
-                    padIn + "\"type\": \"Bool\",\n" +
-                    padIn + "\"value\": " + ((BoolNode) pred).value + "\n" +
-                    padEnd + "}";
+            System.out.println("Bool: " + ((BoolNode) pred).value);
         } else if (pred instanceof ComparisonNode) {
             ComparisonNode c = (ComparisonNode) pred;
             System.out.println("Comparison: " + c.op);
@@ -148,6 +145,7 @@ public class ASTPrinter {
             System.out.println("Unknown Predicate: " + pred.getClass().getSimpleName());
         }
     }
+
     private static void printIndent(int n) {
         for (int i = 0; i < n; i++) System.out.print("  ");
     }
@@ -233,7 +231,15 @@ public class ASTPrinter {
     private static String statementToJson(StmtNode stmt, int indent) {
         String padIn = getIndent(indent + 1);
         String padEnd = getIndent(indent);
-        if (stmt instanceof AssignNode) {
+        if (stmt instanceof ArrayAssignNode) {
+            ArrayAssignNode a = (ArrayAssignNode) stmt;
+            return "{\n" +
+                    padIn + "\"type\": \"ArrayAssign\",\n" +
+                    padIn + "\"arrayName\": \"" + escapeJson(a.arrayName) + "\",\n" +
+                    padIn + "\"index\": " + exprToJson(a.index, indent + 1) + ",\n" +
+                    padIn + "\"value\": " + exprToJson(a.value, indent + 1) + "\n" +
+                    padEnd + "}";
+        } else if (stmt instanceof AssignNode) {
             AssignNode a = (AssignNode) stmt;
             return "{\n" +
                     padIn + "\"type\": \"Assign\",\n" +
@@ -294,6 +300,13 @@ public class ASTPrinter {
                     padIn + "\"left\": " + exprToJson(b.l, indent + 1) + ",\n" +
                     padIn + "\"right\": " + exprToJson(b.r, indent + 1) + "\n" +
                     padEnd + "}";
+        } else if (expr instanceof UnaryOpNode) {
+            UnaryOpNode u = (UnaryOpNode) expr;
+            return "{\n" +
+                    padIn + "\"type\": \"UnaryOp\",\n" +
+                    padIn + "\"op\": \"" + escapeJson(u.op) + "\",\n" +
+                    padIn + "\"expr\": " + exprToJson(u.expr, indent + 1) + "\n" +
+                    padEnd + "}";
         } else if (expr instanceof ArrayAccessNode) {
             ArrayAccessNode a = (ArrayAccessNode) expr;
             return "{\n" +
@@ -327,7 +340,12 @@ public class ASTPrinter {
         if (pred == null) return "null";
         String padIn = getIndent(indent + 1);
         String padEnd = getIndent(indent);
-        if (pred instanceof ComparisonNode) {
+        if (pred instanceof BoolNode) {
+            return "{\n" +
+                    padIn + "\"type\": \"Bool\",\n" +
+                    padIn + "\"value\": " + ((BoolNode) pred).value + "\n" +
+                    padEnd + "}";
+        } else if (pred instanceof ComparisonNode) {
             ComparisonNode c = (ComparisonNode) pred;
             return "{\n" +
                     padIn + "\"type\": \"Comparison\",\n" +
