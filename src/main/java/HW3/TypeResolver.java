@@ -45,7 +45,9 @@ public class TypeResolver {
                     (!rightT.equals(Scope.INT) && !rightT.equals(Scope.UNKNOWN))) {
                 errors.add(new SemanticError("Operator '" + ((BinaryOpNode) expr).op + "' requires int operands", ((BinaryOpNode) expr).line,((BinaryOpNode) expr).col));
             }
-            resolveType = Scope.INT;
+            resolveType = (leftT.equals(Scope.UNKNOWN) || rightT.equals(Scope.UNKNOWN))
+                    ? Scope.UNKNOWN
+                    : Scope.INT;
         }
 
         else if (expr instanceof UnaryOpNode){

@@ -1,0 +1,10 @@
+function main(a: int) returns r: int {
+ x = a + 10;
+if (a > 0) {
+    y = x + 1;
+}
+else {
+    y = x - 1;
+}
+r = y + x;
+}

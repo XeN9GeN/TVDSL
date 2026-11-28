@@ -190,8 +190,7 @@ public class FunnyHW3Test {
         // 3. В конце функции срабатывает проверка declaredLocals:
         //    'x' невозможно вывести (Coundnt withdraw type...)
         //    'y' невозможно вывести (Coundnt withdraw type...)
-        assertEquals(2, errors.size(), "Должно быть 2 ошибки (unknown + 2 un-inferred). Найдено: " + errors);
-
+        assertEquals(3, errors.size(), "Должно быть 3 ошибки (unknown + 2 un-inferred). Найдено: " + errors);
         assertTrue(errors.stream().anyMatch(e -> e.message.contains("Unknown variable")));
         assertTrue(errors.stream().anyMatch(e -> e.message.contains("Coundnt withdraw type of local var: 'x'")));
         assertTrue(errors.stream().anyMatch(e -> e.message.contains("Coundnt withdraw type of local var: 'y'")));
